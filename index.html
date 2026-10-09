@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Backrooms: sin salida - Material POP · Presentación del proceso</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="auto-designer-preview-device" content="slide" />
+<!--
+  Deck: POP Backrooms - Taller No. 1, Diseño de Exhibición, Universidad CESMAG
+  Mecánica de deck adaptada del esqueleto "Biennale Yellow"
+  (zarazhangrui/beautiful-html-templates, MIT) - atribución mantenida.
+  V5: estética de cinta analógica (imágenes con cámara viva: drift, tracking,
+  salto VHS), fondo con manchas irregulares sin retícula, silla del modelo
+  con glitches de render defectuoso, logo A24 oficial (A24_logo.svg),
+  noclip explicado, lugar escogido (bajo las escaleras · Unicentro),
+  troquel 2 piezas modulares, enlace al visor interactivo y diapositiva
+  de cierre. Efectos con respeto a prefers-reduced-motion.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Archivo:ital,wght@0,400;0,500;0,600;1,400;1,500&family=VT323&family=Special+Elite&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --wall:       #C7A96B;
+    --wall-deep:  #B28F58;
+    --wall-lit:   #D8C287;
+    --paper:      #E0D6B4;
+    --paper-deep: #D2C6A0;
+    --moquette:   #5E4A32;
+    --ink:        #262019;
+    --fluor:      #F4F1E4;
+    --phosphor:   #9FE870;
+    --rec:        #C24B33;
+    --rule:       rgba(38,32,25,.22);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background:#14110C; }
+  body{ font-family:'Archivo','Helvetica Neue',sans-serif; color:var(--ink); overflow:hidden; }
+
+  .viewport{ position:fixed; inset:0; display:grid; place-items:center; }
+  .stage{
+    position:relative; width:1920px; height:1080px; overflow:hidden;
+    background:var(--wall); transform-origin:center center;
+  }
+  /* manchas analógicas irregulares (sin retícula): turbulencia a dos escalas */
+  .stage::before{
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='760' height='760'><filter id='mot'><feTurbulence type='fractalNoise' baseFrequency='0.011' numOctaves='4' seed='7'/><feColorMatrix type='matrix' values='0 0 0 0 0.30 0 0 0 0 0.24 0 0 0 0 0.13 0 0 0 0.6 0'/></filter><rect width='760' height='760' filter='url(%23mot)'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='340'><filter id='fin'><feTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='12'/><feColorMatrix type='matrix' values='0 0 0 0 0.27 0 0 0 0 0.21 0 0 0 0 0.12 0 0 0 0.35 0'/></filter><rect width='340' height='340' filter='url(%23fin)'/></svg>");
+    background-size:760px 760px, 340px 340px;
+    opacity:.45; mix-blend-mode:multiply;
+  }
+
+  /* ── capas de habitación ─────────────────────────────────────── */
+  .tube{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:1152px; height:10px; z-index:40; pointer-events:none;
+    background:linear-gradient(180deg, var(--fluor), #E9E2C8);
+    border-radius:0 0 6px 6px;
+    box-shadow:0 0 42px 16px rgba(244,241,228,.55), 0 0 140px 60px rgba(244,241,228,.28);
+  }
+  .baseboard{
+    position:absolute; left:0; right:0; bottom:0; height:38px; z-index:41;
+    background:var(--moquette); border-top:5px solid #4A3A26; pointer-events:none;
+  }
+  .grain{
+    position:absolute; inset:0; z-index:44; pointer-events:none; opacity:.075;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.8'/></svg>");
+  }
+  /* ── tratamiento de cinta analógica para imágenes (cámara viva) ── */
+  .tape-vid{ position:absolute; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
+  .tape-vid .lift{ position:absolute; inset:0; }
+  .tape-vid img{
+    width:100%; height:100%; object-fit:cover; display:block;
+    filter:blur(.6px) saturate(.82) contrast(.95) brightness(1.06);
+    transform:scale(1.09);
+  }
+  .tape-vid::after{
+    content:""; position:absolute; inset:0; z-index:3; pointer-events:none; opacity:.45;
+    background:
+      repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(20,17,12,.18) 2px, rgba(20,17,12,.18) 3px),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='tn'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='220' height='220' filter='url(%23tn)' opacity='0.5'/></svg>");
+    background-size:auto, 220px 220px;
+  }
+  .tape-vid .track-band{
+    position:absolute; left:-4%; width:108%; top:-20%; height:15%; z-index:4;
+    background:linear-gradient(180deg, transparent, rgba(244,241,228,.17) 30%, rgba(38,32,25,.34) 55%, rgba(244,241,228,.15) 72%, transparent);
+    mix-blend-mode:overlay; opacity:0;
+  }
+  .tape-vid.dead{ background:linear-gradient(180deg, #17130d, #262014 55%, #1b160e); }
+  /* sello de tinta vintage */
+  .stamp{
+    position:absolute; z-index:6; pointer-events:none;
+    font-family:'Special Elite','Courier New',monospace;
+    color:var(--rec); border:2.5px solid var(--rec);
+    padding:5px 12px 4px; font-size:18px; letter-spacing:.14em;
+    opacity:.8; mix-blend-mode:multiply; white-space:nowrap;
+  }
+  /* nota diegética bajo la ficha */
+  .diego-warn{
+    margin-top:14px; font-family:'Special Elite','Courier New',monospace;
+    font-size:19px; color:var(--moquette); transform:rotate(-.6deg); opacity:.9;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .tape-vid img{ animation:tape-drift 11s ease-in-out infinite alternate; }
+    .tape-vid.t2 img{ animation-duration:14.5s; animation-delay:-5.2s; }
+    .tape-vid.t3 img{ animation-duration:9.6s; animation-delay:-2.8s; }
+    @keyframes tape-drift{
+      0%  { transform:scale(1.07) translate(0,0);        filter:blur(.55px) saturate(.82) contrast(.95) brightness(1.06); }
+      38% { transform:scale(1.10) translate(-1.3%,.8%);  filter:blur(.95px) saturate(.75) contrast(.92) brightness(1.08); }
+      62% { transform:scale(1.085) translate(.9%,-.6%);  filter:blur(.7px)  saturate(.86) contrast(.97) brightness(1.05); }
+      100%{ transform:scale(1.11) translate(-.6%,-1.1%); filter:blur(1.05px) saturate(.78) contrast(.9) brightness(1.07); }
+    }
+    .tape-vid .lift{ animation:tape-jump 8.7s steps(1) infinite; }
+    .tape-vid.t2 .lift{ animation-delay:-4.1s; }
+    .tape-vid.t3 .lift{ animation-delay:-6.9s; }
+    @keyframes tape-jump{
+      0%,86.9%,89.6%,100%{ transform:translate(0,0) skewX(0); }
+      87%  { transform:translate(-8px,2px) skewX(-1.7deg); }
+      88%  { transform:translate(6px,-2px) skewX(1.2deg); }
+      89.2%{ transform:translate(-3px,0)   skewX(-.5deg); }
+    }
+    .tape-vid .track-band{ animation:tape-track 9.5s steps(1) infinite; }
+    .tape-vid.t2 .track-band{ animation-delay:-3.7s; }
+    .tape-vid.t3 .track-band{ animation-delay:-6.3s; }
+    @keyframes tape-track{
+      0%,57%{ top:-20%; opacity:0; }
+      58%   { opacity:.95; }
+      71%   { top:112%; opacity:.75; }
+      73%,100%{ top:112%; opacity:0; }
+    }
+    .tape-vid.dead{ animation:dead-roll 13s ease-in-out infinite alternate; }
+    @keyframes dead-roll{ from{ background-position:0 0; } to{ background-position:120px 60px; } }
+    /* la escena noclip de portada respira (cámara en mano) */
+    .noclip-scene{ animation:scene-breathe 9s ease-in-out infinite alternate; }
+    @keyframes scene-breathe{
+      0%  { transform:translate(0,0) rotate(0deg) scale(1); }
+      45% { transform:translate(-3px,2px) rotate(.12deg) scale(1.006); }
+      100%{ transform:translate(3px,-2px) rotate(-.1deg) scale(1.003); }
+    }
+    .slide.active .frame{ animation:frame-in 520ms ease-out 1; }
+    @keyframes frame-in{ from{ opacity:0; transform:translateY(12px); filter:blur(3px); } to{ opacity:1; transform:none; filter:blur(0); } }
+  }
+  /* viñeta de lente + chroma bleed global (distorsión de cámara antigua) */
+  .vignette{
+    position:absolute; inset:0; z-index:43; pointer-events:none;
+    background:
+      radial-gradient(ellipse 120% 100% at 50% 42%, transparent 62%, rgba(24,20,13,.16) 88%, rgba(24,20,13,.30) 100%),
+      linear-gradient(90deg, rgba(194,75,51,.045), transparent 9%, transparent 91%, rgba(90,150,110,.05));
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .tube{ animation:flicker 9s linear infinite; }
+    @keyframes flicker{
+      0%,88.9%,90.4%,92.9%,100% { opacity:1; }
+      89%,90.3% { opacity:.55; }
+      93%,93.6% { opacity:.72; }
+    }
+    .grain{ animation:grain-shift 1.2s steps(3) infinite; }
+    @keyframes grain-shift{
+      0%{ transform:translate(0,0); } 33%{ transform:translate(-14px,9px); }
+      66%{ transform:translate(11px,-7px); } 100%{ transform:translate(0,0); }
+    }
+  }
+
+  /* ── diapositivas ────────────────────────────────────────────── */
+  .slide{ position:absolute; inset:0; z-index:10; opacity:0; pointer-events:none; transition:opacity 280ms ease; }
+  .slide.active{ opacity:1; pointer-events:auto; }
+
+  .pagenum{
+    position:absolute; right:72px; bottom:9px; z-index:45;
+    font-family:'VT323',monospace; font-size:20px; letter-spacing:.14em;
+    color:var(--fluor); opacity:.85;
+  }
+  .nav-hint{
+    position:absolute; left:72px; bottom:9px; z-index:45;
+    font-family:'VT323',monospace; font-size:18px; letter-spacing:.12em;
+    color:var(--fluor); opacity:.5; pointer-events:none;
+  }
+  .level-tag{
+    position:absolute; top:34px; right:72px; z-index:45;
+    display:inline-flex; align-items:center; gap:12px;
+    background:var(--ink); color:var(--phosphor);
+    font-family:'VT323',monospace; font-size:19px; letter-spacing:.16em;
+    padding:6px 14px 5px;
+  }
+  .level-tag .dot{ width:9px; height:9px; border-radius:50%; background:var(--rec); }
+
+  .eyebrow{
+    font-family:'Archivo',sans-serif; font-weight:600; text-transform:uppercase;
+    letter-spacing:.18em; font-size:17px; color:var(--ink);
+  }
+  .h-big{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase;
+    letter-spacing:-0.012em; line-height:.96; color:var(--ink); margin:0;
+  }
+  .mono{ font-family:'VT323',monospace; letter-spacing:.1em; }
+  .rec-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--rec); margin-right:7px; vertical-align:1px; }
+  @media (prefers-reduced-motion: no-preference){
+    .rec-dot{ animation:blink 1.6s steps(1) infinite; }
+    @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:.25} }
+  }
+
+  /* flash de zap entre diapositivas (cambio de canal VHS) */
+  .zap{
+    position:absolute; inset:0; z-index:46; pointer-events:none; opacity:0;
+    background:
+      linear-gradient(90deg, rgba(194,75,51,.16), rgba(244,241,228,.34), rgba(90,150,110,.16)),
+      #E9E2C8;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .zap.go{ animation:zapflash 340ms steps(4) 1; }
+    @keyframes zapflash{
+      0%{ opacity:.9; transform:translateX(-26px) skewX(-4deg); }
+      40%{ opacity:.35; transform:translateX(18px) skewX(3deg); }
+      70%{ opacity:.5; transform:translateX(-8px); }
+      100%{ opacity:0; transform:none; }
+    }
+  }
+
+  /* ── D1 · PORTADA ────────────────────────────────────────────── */
+  .s1 .glow{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(ellipse 46% 40% at 50% -6%, rgba(244,241,228,.55) 0%, rgba(244,241,228,0) 70%),
+      radial-gradient(ellipse 34% 30% at 80% 72%, rgba(244,241,228,.2) 0%, rgba(244,241,228,0) 72%);
+  }
+  /* ESCENA NOCLIP DE PORTADA - coordenadas fijas dentro del contenedor animado */
+  .noclip-scene{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+  .noclip-scene .chair{ position:absolute; left:1148px; top:196px; }
+  .s1 .vhs{ position:absolute; right:96px; top:112px; z-index:6; text-align:right;
+    font-family:'VT323',monospace; color:var(--ink); font-size:22px;
+    letter-spacing:.12em; line-height:1.5; }
+  .s1 .vhs .rec{ color:var(--rec); }
+
+  .s1 .titlewrap{ position:absolute; left:72px; bottom:300px; z-index:6; max-width:900px; }
+  .s1 .wordmark{
+    font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:218px; line-height:.9; letter-spacing:-0.018em; color:var(--ink);
+    position:relative;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .s1 .wordmark::after{
+      content:"BACKROOMS"; position:absolute; left:2px; top:0;
+      color:transparent; pointer-events:none;
+      text-shadow:-2px 0 rgba(194,75,51,.38), 2px 0 rgba(159,232,112,.30);
+      animation:rgb-jump 7s steps(1) infinite;
+    }
+    @keyframes rgb-jump{ 0%,93.9%,96%,100%{opacity:0} 94%,95.9%{opacity:.8} }
+  }
+  .s1 .plate{
+    display:inline-block; margin-top:26px; background:var(--ink); color:var(--fluor);
+    font-family:'Oswald',sans-serif; font-weight:500; text-transform:uppercase;
+    letter-spacing:.42em; font-size:30px; padding:12px 30px 11px 34px;
+  }
+  .s1 .tagline{
+    margin-top:22px; font-family:'Archivo',sans-serif; font-weight:600; letter-spacing:.02em;
+    font-size:30px; color:var(--ink); opacity:.92;
+  }
+  .s1 .footer-row{
+    position:absolute; left:72px; right:72px; bottom:82px; z-index:6;
+    display:grid; grid-template-columns:1.25fr 1fr 1.35fr 1fr; gap:36px;
+  }
+  .s1 .footer-row > div{ border-top:3px solid var(--ink); padding-top:12px; }
+  .s1 .ftag{ font-weight:600; text-transform:uppercase; letter-spacing:.16em; font-size:14px; margin-bottom:8px; }
+  .s1 .ftxt{ font-size:19px; line-height:1.45; }
+
+  /* ── D2 · AUDIENCIA ──────────────────────────────────────────── */
+  .s2 .frame{ position:absolute; inset:64px 72px 82px; z-index:6; display:grid; grid-template-columns:1.06fr .94fr; gap:64px; }
+  .s2 .head{ margin-bottom:28px; }
+  .s2 .head h2{ font-size:76px; }
+  .s2 .profile{ display:flex; flex-direction:column; }
+  .s2 .p-item{ display:grid; grid-template-columns:64px 1fr; gap:18px; padding:15px 0; border-bottom:1px solid var(--rule); }
+  .s2 .p-item .n{ font-family:'VT323',monospace; font-size:24px; opacity:.75; padding-top:3px; }
+  .s2 .p-item .t{ font-size:23px; line-height:1.42; }
+  .s2 .p-item .t strong{ font-weight:600; }
+  .s2 .insight{ margin-top:30px; background:var(--ink); color:var(--fluor); padding:26px 30px; position:relative; }
+  .s2 .insight::before{
+    content:"INSIGHT"; position:absolute; top:-13px; left:24px; background:var(--ink);
+    color:var(--phosphor); font-family:'VT323',monospace; font-size:17px; letter-spacing:.22em; padding:3px 12px 2px;
+  }
+  .s2 .insight p{ margin:0; font-style:italic; font-size:26px; line-height:1.4; }
+  .s2 .dir-head{
+    font-weight:600; text-transform:uppercase; letter-spacing:.16em; font-size:15px;
+    border-bottom:3px solid var(--ink); padding-bottom:12px; margin-bottom:22px;
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .s2 .dir-head .sub{ font-family:'VT323',monospace; font-size:17px; letter-spacing:.12em; opacity:.7; text-transform:none; }
+  .s2 .pyramid{ display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .s2 .lvl{ background:var(--paper); border:1.5px solid var(--ink); display:grid; grid-template-columns:auto 1fr; align-items:center; gap:14px; padding:9px 16px; min-height:58px; }
+  .s2 .lvl .lv{
+    font-family:'VT323',monospace; font-size:17px; letter-spacing:.12em;
+    background:var(--ink); color:var(--phosphor); padding:3px 9px 2px; white-space:nowrap;
+  }
+  .s2 .lvl .lt{ font-size:20px; line-height:1.25; }
+  .s2 .lvl.top{ background:var(--ink); border-color:var(--ink); }
+  .s2 .lvl.top .lt{ color:var(--fluor); }
+  .s2 .lvl.top .lt strong{ color:var(--phosphor); }
+  .s2 .lvl .lt strong{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.04em; font-size:21px; display:block; }
+  .s2 .w5{ width:42%; } .s2 .w4{ width:52%; } .s2 .w3{ width:62%; }
+  .s2 .w2{ width:74%; } .s2 .w1{ width:86%; } .s2 .w0{ width:100%; }
+  .s2 .pyr-note{ margin-top:20px; font-size:17px; line-height:1.45; opacity:.8; text-align:center; }
+
+  /* ── D3 · CONCEPTO ───────────────────────────────────────────── */
+  .s3 .frame{ position:absolute; inset:64px 72px 82px; z-index:6; display:grid; grid-template-columns:1fr 1fr; gap:60px; }
+  .s3 .head h2{ font-size:82px; }
+  .s3 .head .kicker{
+    font-family:'Oswald',sans-serif; font-weight:500; text-transform:uppercase;
+    letter-spacing:.3em; font-size:22px; color:var(--moquette); margin-bottom:14px;
+  }
+  .s3 .concept{ margin-top:26px; border-left:5px solid var(--ink); padding:4px 0 4px 22px; }
+  .s3 .concept p{ margin:0; font-size:25px; line-height:1.45; }
+  .s3 .what{ margin-top:20px; background:var(--paper-deep); border:1.5px solid var(--ink); padding:16px 20px 14px; position:relative; }
+  .s3 .what .wk{ position:absolute; top:-12px; left:18px; background:var(--ink); color:var(--phosphor);
+    font-family:'VT323',monospace; font-size:16px; letter-spacing:.2em; padding:3px 12px 2px; }
+  .s3 .what p{ margin:0; font-size:21px; line-height:1.45; }
+  .s3 .layers{ margin-top:30px; display:flex; flex-direction:column; }
+  .s3 .layer{ display:grid; grid-template-columns:190px 1fr; gap:16px; padding:13px 0; border-bottom:1px solid var(--rule); align-items:baseline; }
+  .s3 .layer .e{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em; font-size:22px; }
+  .s3 .layer .m{ font-size:21px; line-height:1.35; }
+  .s3 .acts{ display:flex; flex-direction:column; gap:16px; margin-top:8px; }
+  .s3 .act{ background:var(--paper); border:1.5px solid var(--ink); padding:20px 24px 18px; position:relative; }
+  .s3 .act .d{
+    position:absolute; top:-14px; right:20px; background:var(--ink); color:var(--fluor);
+    font-family:'VT323',monospace; font-size:18px; letter-spacing:.14em; padding:3px 12px 2px;
+  }
+  .s3 .act h3{ margin:0 0 8px; font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.05em; font-size:29px; }
+  .s3 .act h3 span{ font-family:'VT323',monospace; color:var(--moquette); font-size:24px; margin-right:10px; }
+  .s3 .act p{ margin:0; font-size:21px; line-height:1.4; }
+  .s3 .acts-title{
+    font-weight:600; text-transform:uppercase; letter-spacing:.16em; font-size:15px;
+    border-bottom:3px solid var(--ink); padding-bottom:12px; margin-top:26px;
+  }
+
+  /* ── D4 · CONTEXTO ───────────────────────────────────────────── */
+  .s4 .frame{ position:absolute; inset:64px 72px 82px; z-index:6; display:grid; grid-template-columns:1fr 790px; gap:52px; }
+  .s4 .s4right{ display:flex; flex-direction:column; justify-content:flex-end; gap:14px; }
+  .s4 .s4right .cam-frame{ height:796px; padding:0; overflow:hidden; }
+  .s4 .s4cap{ font-family:'VT323',monospace; font-size:18px; letter-spacing:.14em; color:var(--ink); opacity:.75; text-align:center; }
+  .s4 .head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .s4 .head h2{ font-size:66px; }
+  .s4 .crit{ font-size:19px; margin:6px 0 18px; }
+  .s4 .crit b{ font-weight:600; }
+  .s4 .ledger{ display:flex; flex-direction:column; }
+  .s4 .row{ display:grid; grid-template-columns:292px 1fr 208px; gap:20px; align-items:center; padding:9.5px 0; border-bottom:1px solid var(--rule); }
+  .s4 .row.headrow{ padding:6px 0 8px; border-bottom:3px solid var(--ink); }
+  .s4 .row.headrow > div{ font-weight:600; text-transform:uppercase; letter-spacing:.15em; font-size:13.5px; }
+  .s4 .site{ font-family:'Oswald',sans-serif; font-weight:500; text-transform:uppercase; letter-spacing:.03em; font-size:23px; }
+  .s4 .read{ font-size:19px; line-height:1.35; }
+  .s4 .verdict{ font-family:'VT323',monospace; font-size:17px; letter-spacing:.1em; text-align:right; justify-self:end; padding:2px 10px 1px; }
+  .s4 .v-out{ color:var(--moquette); border:1.5px solid rgba(94,74,50,.45); }
+  .s4 .v-final{ color:var(--ink); background:var(--paper); border:1.5px solid var(--ink); }
+  .s4 .v-win{ color:var(--phosphor); background:var(--ink); border:1.5px solid var(--ink); }
+  .s4 .metaphor{ margin-top:20px; border-left:5px solid var(--ink); padding:6px 0 6px 24px; font-size:24px; line-height:1.45; }
+
+  /* ── D5 · LA PIEZA + FICHA ───────────────────────────────────── */
+  .s5 .frame{ position:absolute; inset:64px 72px 82px; z-index:6; display:grid; grid-template-columns:.92fr 1.08fr; gap:56px; }
+  .s5 .head h2{ font-size:72px; }
+  .s5 .ficha{
+    margin-top:26px; background:var(--paper); border:2.5px solid var(--ink);
+    position:relative; padding:26px 28px 22px;
+  }
+  .s5 .ficha::before, .s5 .ficha::after,
+  .s5 .ficha .screw-b, .s5 .ficha .screw-a{
+    content:""; position:absolute; width:11px; height:11px; border-radius:50%;
+    background:var(--ink); box-shadow:inset 0 0 0 2.5px var(--paper), inset 0 0 0 8px var(--ink);
+  }
+  .s5 .ficha::before{ top:9px; left:9px; } .s5 .ficha::after{ top:9px; right:9px; }
+  .s5 .ficha .screw-a{ bottom:9px; left:9px; } .s5 .ficha .screw-b{ bottom:9px; right:9px; }
+  .s5 .ficha .doc{
+    position:absolute; top:-15px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:var(--phosphor); font-family:'VT323',monospace;
+    font-size:18px; letter-spacing:.24em; padding:4px 16px 3px;
+  }
+  .s5 .f-row{ display:grid; grid-template-columns:190px 1fr; gap:14px; padding:9px 0; border-bottom:1px solid rgba(38,32,25,.18); align-items:baseline; }
+  .s5 .f-row:last-child{ border-bottom:none; }
+  .s5 .f-k{ font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.07em; font-size:18.5px; }
+  .s5 .f-v{ font-size:19px; line-height:1.38; }
+  .s5 .gallery{ display:flex; flex-direction:column; gap:18px; }
+  .s5 .cam-frame{
+    background:#14110C; border:1.5px solid var(--ink); position:relative;
+    display:flex; flex-direction:column; justify-content:flex-end;
+  }
+  .s5 .cam-frame .cam{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px; border-bottom:1px solid rgba(244,241,228,.16);
+    font-family:'VT323',monospace; color:var(--phosphor); font-size:17px; letter-spacing:.12em;
+  }
+  .s5 .cam-frame .ph{ color:var(--fluor); text-align:center; padding:34px 18px 30px; }
+  .s5 .cam-frame .ph .t1{ font-family:'Oswald',sans-serif; font-weight:500; text-transform:uppercase; letter-spacing:.14em; font-size:21px; }
+  .s5 .cam-frame .ph .t2{ font-size:16px; opacity:.7; margin-top:6px; letter-spacing:.04em; }
+  .s5 .main-frame{ flex:1; min-height:298px; }
+  .s5 .duo{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .s5 .small-frame{ min-height:128px; }
+  .s5 .lockup{
+    margin-top:2px; display:flex; align-items:center; justify-content:space-between;
+    background:var(--ink); color:var(--fluor); padding:12px 22px;
+  }
+  .s5 .lockup .wm{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase;
+    letter-spacing:.16em; font-size:24px;
+  }
+  .s5 .lockup .wm span{ color:var(--phosphor); }
+  .s5 .a24mark{ display:flex; align-items:center; gap:12px; }
+  .s5 .a24mark svg{ height:26px; width:auto; display:block; }
+
+  /* pirámide y actos alineados a la parte baja de la diapositiva */
+  .s2 .frame > div:last-child, .s3 .frame > div:last-child{ display:flex; flex-direction:column; justify-content:flex-end; }
+
+  /* enlace al visor interactivo */
+  .visor-link{
+    display:block; margin-top:14px; background:var(--ink); color:var(--phosphor);
+    font-family:'VT323',monospace; font-size:20px; letter-spacing:.14em;
+    padding:13px 18px 11px; text-decoration:none;
+  }
+  .visor-link:hover{ color:var(--fluor); }
+
+  /* ── D6 · CIERRE - FIN DE LA CINTA ───────────────────────────── */
+  .s6 .fin-bg{ position:absolute; inset:0; z-index:1; background:radial-gradient(ellipse 90% 80% at 50% 58%, rgba(20,17,12,.72) 0%, rgba(20,17,12,.93) 100%); }
+  .s6 .fin-band{ position:absolute; left:0; right:0; top:-20%; height:14%; z-index:2; pointer-events:none; opacity:.14;
+    background:linear-gradient(180deg, transparent, rgba(244,241,228,.5) 45%, rgba(38,32,25,.6) 60%, transparent); }
+  .s6 .fin{ position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:26px; }
+  .s6 .fin-eyebrow{ font-size:22px; letter-spacing:.34em; color:var(--phosphor); opacity:.85; }
+  .s6 .fin-mark{ margin:0; font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; font-size:150px; line-height:.92; color:var(--fluor); text-shadow:-2px 0 rgba(194,75,51,.35), 2px 0 rgba(159,232,112,.25); }
+  .s6 .fin-plate{
+    display:inline-block; background:#F4F1E4; color:#1A1712;
+    font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase;
+    letter-spacing:.3em; font-size:56px; line-height:1; padding:16px 40px 13px 46px;
+    box-shadow:0 0 34px rgba(244,241,228,.16);
+  }
+  .s6 .fin-tag{ margin:0; font-family:'Archivo',sans-serif; font-weight:600; letter-spacing:.22em; font-size:26px; color:var(--paper); }
+  .s6 .fin-a24{ height:42px; filter:invert(1); opacity:.92; }
+  .s6 .fin-rewind{ font-size:20px; letter-spacing:.2em; color:var(--phosphor); opacity:.8; }
+  @media (prefers-reduced-motion: no-preference){
+    .s6 .fin-band{ animation:fin-track 7.5s linear infinite; }
+    @keyframes fin-track{ 0%{ top:-20%; } 100%{ top:115%; } }
+  }
+
+  .notes{ display:none; }
+
+  @page { size:1920px 1080px; margin:0; }
+  @media print{
+    body{ overflow:visible; background:#fff; }
+    .viewport{ position:static; }
+    .stage{ transform:none !important; width:1920px; height:auto; position:static; }
+    .slide{ position:relative; opacity:1; pointer-events:auto; page-break-after:always; height:1080px; }
+    .tube,.grain{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="viewport">
+<main class="stage" data-deck aria-label="Presentación del proceso - Material POP Backrooms">
+
+  <div class="tube" aria-hidden="true"></div>
+  <div class="baseboard" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="nav-hint" aria-hidden="true">&#8592; / &#8594; · ESPACIO · F11 PANTALLA COMPLETA</div>
+  <div class="zap" id="zapfx" aria-hidden="true"></div>
+
+  <!-- ══════════════ D1 · NIVEL 0 - LA PELÍCULA Y EL TIPO DE POP ══════════════ -->
+  <section class="slide s1 active" data-slide="1" data-screen-label="La película y el tipo de POP">
+    <div class="glow" aria-hidden="true"></div>
+
+    <!-- Sombra limpia de contacto noclip sobre la pared anfitriona (sin cajas de cartón postizas) -->
+    <div style="position:absolute; left:1080px; top:210px; width:340px; height:480px; background:radial-gradient(ellipse at center, rgba(38,32,25,0.42) 0%, rgba(38,32,25,0) 70%); transform:rotate(6deg); pointer-events:none;" aria-hidden="true"></div>
+
+    <!-- ESCENA NOCLIP: boceto a mano de la silla (solo líneas, irregular, sin rellenos) sobre la pared -->
+    <div class="noclip-scene" aria-hidden="true">
+      <svg class="chair" style="z-index:4; left:912px; top:186px;" width="430" height="420" viewBox="0 0 430 420" role="img" aria-label="Boceto a línea de la silla, trazado irregular sobre la pared">
+        <g fill="none" stroke="#262019" stroke-linecap="round" transform="rotate(11 215 210)">
+          <!-- riel superior curvo (doble trazo, se pasa de los postes) -->
+          <path d="M 52 44 C 120 20, 300 16, 372 38" stroke-width="3.2" opacity=".92"/>
+          <path d="M 58 52 C 126 30, 296 26, 364 46" stroke-width="2.2" opacity=".55"/>
+          <!-- postes laterales (extendidos arriba y abajo) -->
+          <path d="M 90 30 C 87 82, 92 142, 85 206" stroke-width="3" opacity=".9"/>
+          <path d="M 97 34 C 95 86, 99 144, 92 200" stroke-width="1.8" opacity=".4"/>
+          <path d="M 340 28 C 343 80, 338 140, 345 204" stroke-width="3" opacity=".9"/>
+          <path d="M 333 32 C 336 84, 331 142, 338 198" stroke-width="1.8" opacity=".4"/>
+          <!-- 4 travesaños (sobresalen de los postes) -->
+          <path d="M 74 70 C 150 64, 290 66, 358 72" stroke-width="2.8" opacity=".88"/>
+          <path d="M 76 104 C 148 98, 292 100, 356 108" stroke-width="2.8" opacity=".85"/>
+          <path d="M 73 138 C 152 132, 288 134, 359 142" stroke-width="2.8" opacity=".88"/>
+          <path d="M 75 170 C 150 165, 291 166, 357 174" stroke-width="2.6" opacity=".85"/>
+          <!-- asiento (borde frontal doble, pasa las patas) -->
+          <path d="M 54 212 C 140 204, 300 206, 372 214" stroke-width="3.2" opacity=".95"/>
+          <path d="M 58 226 C 142 218, 298 220, 368 228" stroke-width="2.4" opacity=".7"/>
+          <path d="M 54 212 C 56 217, 56 222, 58 226" stroke-width="2" opacity=".6"/>
+          <path d="M 372 214 C 371 219, 370 224, 368 228" stroke-width="2" opacity=".6"/>
+          <!-- faldón y esquinas -->
+          <path d="M 62 228 C 63 240, 64 248, 66 258" stroke-width="2.4" opacity=".8"/>
+          <path d="M 366 230 C 365 242, 364 250, 362 260" stroke-width="2.4" opacity=".8"/>
+          <!-- patas delanteras (largas, torcidas, se pasan del piso) -->
+          <path d="M 84 258 C 81 300, 88 344, 80 398" stroke-width="3.2" opacity=".95"/>
+          <path d="M 95 260 C 92 302, 98 344, 91 394" stroke-width="1.8" opacity=".4"/>
+          <path d="M 344 260 C 347 302, 341 346, 350 400" stroke-width="3.2" opacity=".95"/>
+          <path d="M 333 262 C 336 304, 330 346, 338 396" stroke-width="1.8" opacity=".4"/>
+          <!-- travesaño entre patas (sobresale) -->
+          <path d="M 66 336 C 150 330, 292 332, 362 340" stroke-width="2.6" opacity=".85"/>
+          <!-- trazos sueltos de boceto (joints mal resueltos) -->
+          <path d="M 88 74 L 74 66" stroke-width="1.6" opacity=".5"/>
+          <path d="M 342 108 L 358 100" stroke-width="1.6" opacity=".5"/>
+          <path d="M 84 214 L 98 206" stroke-width="1.6" opacity=".5"/>
+          <path d="M 348 216 L 362 208" stroke-width="1.6" opacity=".5"/>
+        </g>
+      </svg>
+      <div class="stamp" style="left:984px; top:592px; transform:rotate(-8deg); z-index:5;">PROPIEDAD DEL NIVEL 0</div>
+    </div>
+
+    <div class="vhs" aria-hidden="true">
+      <div><span class="rec">&#9679;</span> REC &nbsp;00:13:47</div>
+      <div>PLAY &#9654;</div>
+    </div>
+
+    <div class="titlewrap">
+      <h1 class="wordmark">Backrooms</h1>
+      <div class="plate">Sin salida</div>
+      <p class="tagline">No deberías estar aquí.</p>
+    </div>
+
+    <div class="footer-row">
+      <div>
+        <div class="ftag">La película</div>
+        <div class="ftxt">Clark, dueño de una mueblería en quiebra, cae a una dimensión de oficinas infinitas. Su terapeuta entra a rescatarlo.</div>
+      </div>
+      <div>
+        <div class="ftag">Género</div>
+        <div class="ftxt">Terror psicológico · found footage.</div>
+      </div>
+      <div>
+        <div class="ftag">Tipo de POP</div>
+        <div class="ftxt">Rompe-tráfico (stopper). Intervención volumétrica de pared en cartón plegado.</div>
+      </div>
+      <div>
+        <div class="ftag">Proyecto</div>
+        <div class="ftxt">Taller No. 1 · Diseño de Exhibición<br />Universidad CESMAG · Pasto · 2026</div>
+      </div>
+    </div>
+
+    <div class="level-tag"><span class="dot" aria-hidden="true"></span>NIVEL 0 · LA PELÍCULA</div>
+    <div class="pagenum">01 / 06</div>
+    <aside class="notes">Buenas tardes. Presentamos el material POP para Backrooms: sin salida, la película de Kane Parsons producida por A24. Es terror psicológico found footage: Clark, dueño de una mueblería en quiebra, cae a una dimensión de oficinas infinitas y su terapeuta entra a rescatarlo. El tipo de POP es un rompe-tráfico - un stopper - intervenido como pieza volumétrica de pared en cartón plegado. A continuación: la audiencia, el concepto, el espacio y la pieza.</aside>
+  </section>
+
+  <!-- ══════════════ D2 · NIVEL 1 - AUDIENCIA ══════════════ -->
+  <section class="slide s2" data-slide="2" data-screen-label="Audiencia y pirámide de Maslow">
+    <div class="frame">
+      <div>
+        <div class="head">
+          <div class="eyebrow">Audiencia - público objetivo</div>
+          <h2 class="h-big">¿A quién le<br />habla Backrooms?</h2>
+        </div>
+        <div class="profile">
+          <div class="p-item"><div class="n">01</div><div class="t"><strong>Gen Z, núcleo 15-25.</strong> Crecieron con el creepypasta y los cortos de Kane Pixels.</div></div>
+          <div class="p-item"><div class="n">02</div><div class="t"><strong>&ldquo;Detectives de internet&rdquo;.</strong> No consumen terror pasivo: investigan, buscan easter eggs, arman teorías (la corporación Async, Reddit, X).</div></div>
+          <div class="p-item"><div class="n">03</div><div class="t"><strong>Alfabetización digital extrema.</strong> Decodifican narrativas fragmentadas y la estética VHS como lenguaje propio.</div></div>
+          <div class="p-item"><div class="n">04</div><div class="t"><strong>Sensibilidad liminal.</strong> Miedo de soledad arquitectónica, no de violencia.</div></div>
+          <div class="p-item"><div class="n">05</div><div class="t"><strong>En Pasto:</strong> jóvenes que ruedan los centros en modo exploración.</div></div>
+        </div>
+        <div class="insight">
+          <p>No quieren que les vendan una película: quieren tropezarse con un error de la realidad, averiguarlo y hablar al respecto.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="dir-head">
+          <span>Necesidades - pirámide de Maslow</span>
+          <span class="sub">DIRECTORIO · 6 NIVELES</span>
+        </div>
+        <div class="pyramid">
+          <div class="lvl w5 top"><span class="lv">NIVEL 5</span><div class="lt"><strong>Autorrealización</strong>Vivir la película: una experiencia inquietante y única, que se comparte.</div></div>
+          <div class="lvl w4"><span class="lv">NIVEL 4</span><div class="lt"><strong>Estética</strong>Lo raro como belleza: el momento que se fotografía.</div></div>
+          <div class="lvl w3"><span class="lv">NIVEL 3</span><div class="lt"><strong>Cognitiva</strong>Resolver el enigma: la pieza es un misterio con pista.</div></div>
+          <div class="lvl w2"><span class="lv">NIVEL 2</span><div class="lt"><strong>Estima</strong>Capital cultural: &ldquo;yo lo entendí primero&rdquo;.</div></div>
+          <div class="lvl w1"><span class="lv">NIVEL 1</span><div class="lt"><strong>Pertenencia</strong>Reconocer la referencia = pertenecer a la tribu.</div></div>
+          <div class="lvl w0"><span class="lv">NIVEL 0</span><div class="lt"><strong>Seguridad</strong>Catarsis: el miedo, en un marco controlado.</div></div>
+        </div>
+        <p class="pyr-note">La pieza recorre la pirámide completa: inquieta, premia y se comparte.</p>
+      </div>
+    </div>
+
+    <div class="level-tag"><span class="dot" aria-hidden="true"></span>NIVEL 1 · AUDIENCIA</div>
+    <div class="pagenum">02 / 06</div>
+    <aside class="notes">Primero, la audiencia. Backrooms nació como creepypasta y como serie viral de YouTube, así que su público natural es la Generación Z: jóvenes entre 15 y 25 años que no consumen terror pasivamente - lo investigan, buscan pistas, comparten teorías. En Pasto, ese público rueda los centros comerciales los fines de semana. Si lo leemos con la pirámide de Maslow, la pieza responde nivel por nivel: catarsis segura en la base, pertenencia a la tribu que entiende la referencia, estima, placer cognitivo al resolver el misterio y una experiencia estética única en la cima. Nuestro insight guía todo el proyecto: no quieren que les vendan una película; quieren tropezarse con un error de la realidad, averiguarlo y contarlo.</aside>
+  </section>
+
+  <!-- ══════════════ D3 · NIVEL 2 - CONCEPTO ══════════════ -->
+  <section class="slide s3" data-slide="3" data-screen-label="Concepto y narrativa NOCLIP">
+    <div class="frame">
+      <div>
+        <div class="head">
+          <div class="kicker">Concepto - narrativa a desarrollar</div>
+          <h2 class="h-big">Noclip</h2>
+        </div>
+        <div class="concept">
+          <p>El terror psicológico en espacios liminales desiertos, materializado como <strong>un error de la realidad</strong> en el lugar más rutinario del centro comercial.</p>
+        </div>
+        <div class="layers">
+          <div class="layer"><div class="e">El recurso protagónico</div><div class="m">En la película, atravesar cosas. Aquí: un mueble sencillo, una silla en escala 1:1 en cartón, emergiendo de la pared.</div></div>
+          <div class="layer"><div class="e">El plegado</div><div class="m">Dobleces y hendidos a 90°. Sin patas traseras: la mitad trasera queda del otro lado.</div></div>
+          <div class="layer"><div class="e">El modelo defectuoso</div><div class="m">La pieza se asume como un render 3D con errores que se cueló a la realidad: glitches, caras fantasma, geometría que falla.</div></div>
+          <div class="layer"><div class="e">Los textos, grabados</div><div class="m">Todo va directo en la silla: BACKROOMS · NO DEBERÍAS ESTAR AQUÍ · A24 · créditos. Sin placas adicionales.</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="what">
+          <div class="wk">¿QUÉ ES NOCLIP?</div>
+          <p>En los videojuegos, <strong>noclip</strong> es el fallo que deja atravesar paredes: la colisión deja de existir y cruzas lo que debería detenerte. En los Backrooms, es así como se entra.</p>
+        </div>
+        <div class="acts-title">Los 3 actos del transeúnte</div>
+        <div class="acts">
+          <div class="act">
+            <div class="d">0-5 m</div>
+            <h3><span>01</span>La doble toma</h3>
+            <p>El cerebro registra &ldquo;una silla atravesando la pared&rdquo;. En una pared aburrida del centro comercial, es imposible ignorarla.</p>
+          </div>
+          <div class="act">
+            <div class="d">1-3 m</div>
+            <h3><span>02</span>El acercamiento</h3>
+            <p>Una pared color crema, una pieza de madera de un color extraño. El fan reconoce el universo; el curioso quiere entender.</p>
+          </div>
+          <div class="act">
+            <div class="d">0-1 m</div>
+            <h3><span>03</span>La recompensa</h3>
+            <p>Los textos grabados en la silla resuelven el misterio. Los curiosos querrán fotografiar e incluso compartir el POP.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="level-tag"><span class="dot" aria-hidden="true"></span>NIVEL 2 · CONCEPTO</div>
+    <div class="pagenum">03 / 06</div>
+    <aside class="notes">El concepto se llama NOCLIP. En los videojuegos, noclip es el fallo que deja atravesar paredes: la colisión deja de existir. Es el recurso protagónico de la película, y aquí lo materializamos con un mueble sencillo - una silla en escala 1:1 en cartón - emergiendo de la pared. El plegado es puro: dobleces y hendidos a noventa grados, sin patas traseras. Y hay una decisión importante: la pieza se asume como un modelo 3D defectuoso, un render con glitches que se coló a la realidad. Todo el texto va grabado directo en la silla: Backrooms, no deberías estar aquí, y el logo de A24. El transeúnte vive tres actos: la doble toma, el acercamiento y la recompensa.</aside>
+  </section>
+
+  <!-- ══════════════ D4 · NIVEL 3 - CONTEXTO ══════════════ -->
+  <section class="slide s4" data-slide="4" data-screen-label="Contexto - espacio público en Pasto">
+    <div class="frame">
+      <div>
+        <div class="head">
+          <h2 class="h-big">El espacio: un Backrooms potencial</h2>
+          <div class="eyebrow">Pasto · espacio público</div>
+        </div>
+        <p class="crit"><b>Criterios:</b> pared continua · luz fría uniforme · flujo joven y lento · lugar de tránsito.</p>
+
+        <div class="ledger">
+          <div class="row headrow"><div>Sitio evaluado</div><div>Lectura</div><div style="text-align:right">Veredicto</div></div>
+          <div class="row"><div class="site">Cine del mall</div><div class="read">Obvio y genérico para una pieza que promociona cine.</div><div class="verdict v-out">DESCARTADO</div></div>
+          <div class="row"><div class="site">Pasillo de baños · Unicentro</div><div class="read">Paredes continuas y luz uniforme - pero de poco calce visual.</div><div class="verdict v-final">FINALISTA</div></div>
+          <div class="row"><div class="site">Bajo las escaleras · Unicentro</div><div class="read">Bajando a un nivel inferior: la pared se ve completa desde arriba, de frente y sin esquinas.</div><div class="verdict v-win">RECOMENDADO</div></div>
+        </div>
+
+        <div class="metaphor">Bajar las gradas es ya entrar en la historia: en el nivel inferior está la pared que atraviesa a los Backrooms.</div>
+      </div>
+
+      <div class="s4right">
+        <div class="cam-frame">
+          <div class="cam" style="z-index:2; background:rgba(20,17,12,.75);"><span><span class="rec-dot"></span>CAM 01 · LUGAR ESCOGIDO</span><span>UNICENTRO · PASTO</span></div>
+          <div class="tape-vid t3"><div class="lift"><img src="lugar-escogido.jpeg" alt="Lugar escogido: bajo las escaleras del centro comercial Unicentro" /></div></div>
+        </div>
+        <div class="s4cap">BAJO LAS ESCALERAS · UNICENTRO - LA PARED SE LEE COMPLETA DESDE ARRIBA</div>
+      </div>
+    </div>
+
+    <div class="level-tag"><span class="dot" aria-hidden="true"></span>NIVEL 3 · CONTEXTO</div>
+    <div class="pagenum">04 / 06</div>
+    <aside class="notes">El espacio. Con cuatro criterios - pared continua, luz uniforme, flujo joven, lugar de tránsito - evaluamos varios sitios de Pasto. El escogido está en Unicentro: bajando las escaleras. Y esa bajada no es un detalle: es la metáfora de la película - bajar a un nivel inferior, y en ese nivel inferior está la pared que atraviesa a los Backrooms. Desde arriba, la pared se lee completa, de frente y sin esquinas: máxima funcionalidad para el rompe-tráfico.</aside>
+  </section>
+
+  <!-- ══════════════ D5 · NIVEL 4 - LA PIEZA + FICHA ══════════════ -->
+  <section class="slide s5" data-slide="5" data-screen-label="La pieza situada y ficha técnica">
+    <div class="frame">
+      <div>
+        <div class="head">
+          <div class="eyebrow">Diseño de material POP - entrega</div>
+          <h2 class="h-big">La pieza situada</h2>
+        </div>
+        <div class="ficha">
+          <div class="doc">FICHA TÉCNICA · DOC 001-A (V4)</div>
+          <div class="f-row"><div class="f-k">Pieza</div><div class="f-v">NOCLIP - Silla ladderback plegable en cartón, para <em>Backrooms: sin salida</em> (A24, 2026).</div></div>
+          <div class="f-row"><div class="f-k">Descripción</div><div class="f-v">Silla ladderback escala 1:1 en cartón corrugado 5 mm, conformada solo por pliegues, sin patas traseras. Aparece atravesando la pared real en noclip: un render 3D defectuoso que se coló en la realidad. Textos grabados en la pieza: BACKROOMS · NO DEBERÍAS ESTAR AQUÍ · A24 · créditos de la película.</div></div>
+          <div class="f-row"><div class="f-k">Dimensiones</div><div class="f-v">44 cm de ancho x 93 cm de alto total x 42 cm de saliente desde la pared. Altura de asiento: 45 cm. <em>(por corroborar)</em></div></div>
+          <div class="f-row"><div class="f-k">Materiales</div><div class="f-v">Cartón corrugado 5 mm onda simple kraft y tintas al agua - kit plano, 100% reciclable.</div></div>
+          <div class="f-row"><div class="f-k">Montaje</div><div class="f-v">2 piezas modulares (asiento + patas / espaldar) que pliegan con hendidos a 90°. Solapa a pared con cinta doble faz: no invasivo.</div></div>
+          <div class="f-row"><div class="f-k">Guía de uso</div><div class="f-v">Cortar el troquel, doblar siguiendo el simulador de plegado y fijar la solapa a la pared. Montaje 1 persona · 15 minutos · sin herramientas eléctricas.</div></div>
+          <div class="f-row"><div class="f-k">Replicabilidad</div><div class="f-v">Troquel de 2 piezas modulares apto para réplica masiva.</div></div>
+          <div class="screw-a" aria-hidden="true"></div><div class="screw-b" aria-hidden="true"></div>
+        </div>
+        <a class="visor-link" href="05-visor-3d-y-troquel.html">&#9654; ENSAMBLAJE EN 3D - SIMULADOR DE PLEGADO + TROQUELES 1:1</a>
+        <div class="diego-warn">NO INTENTE RETIRAR LA SILLA: LA PARED ES INESTABLE.</div>
+      </div>
+
+      <div class="gallery">
+        <div class="cam-frame main-frame" style="overflow:hidden; padding:0;">
+          <div class="cam" style="z-index:2; background:rgba(20,17,12,.75);"><span><span class="rec-dot"></span>CAM 01 · FRONTAL (SITIO REAL)</span><span>03-09-2026 00:30</span></div>
+          <div class="tape-vid"><div class="lift"><img src="assets/mockup-pop-pasillo.jpg" alt="Montaje del POP NOCLIP en el pasillo real" /></div></div>
+        </div>
+        <div class="duo">
+          <div class="cam-frame small-frame" style="overflow:hidden; padding:0; height:160px;">
+            <div class="cam" style="z-index:2; background:rgba(20,17,12,.75);"><span><span class="rec-dot"></span>CAM 02 · NOCLIP</span><span>DETALLE PARED</span></div>
+            <div class="tape-vid t2"><div class="lift"><img src="assets/mockup-detalle-silla.jpg" alt="Detalle de la penetración noclip en la pared" /></div></div>
+          </div>
+          <div class="cam-frame small-frame" style="overflow:hidden; padding:0; height:160px; background:#F7F4EA; display:flex; align-items:center; justify-content:center;">
+            <div class="cam" style="z-index:2; background:rgba(20,17,12,.75); color:var(--phosphor);"><span><span class="rec-dot"></span>CAM 03 · TROQUEL</span><span>CAD 1:1</span></div>
+            <div style="font-family:'VT323',monospace; color:#262019; text-align:center; padding:24px 10px 10px;">
+              <div style="font-size:22px; font-weight:700; color:#C24B33;">TROQUEL 2 PIEZAS</div>
+              <div style="font-size:15px; margin-top:4px;">MODULARES · CORTE NEGRO / HENDIDO ROJO</div>
+              <div style="font-size:13px; color:#5E4A32;">EN EL VISOR INTERACTIVO &#9654;</div>
+            </div>
+          </div>
+        </div>
+        <div class="lockup">
+          <div class="wm">Backrooms: <span>sin salida</span></div>
+          <div class="a24mark">
+            <img src="A24_logo.svg" alt="A24" style="height:28px; width:auto; display:block; filter:invert(1);" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="level-tag"><span class="dot" aria-hidden="true"></span>NIVEL 4 · LA PIEZA</div>
+    <div class="pagenum">05 / 06</div>
+    <aside class="notes">Y esta es la pieza. Ficha técnica: silla ladderback de cartón corrugado de cinco milímetros, dos piezas modulares - asiento con patas, y espaldar - que pliegan con hendidos a noventa grados y se fijan a la pared con solapa y cinta doble faz. La guía de uso es el montaje: cortar, doblar siguiendo el simulador de plegado y fijar. Todo el proceso interactivo - el simulador 3D y los troqueles a escala real - está en el visor que acompaña esta presentación. Cerramos: Backrooms, sin salida.</aside>
+  </section>
+
+  <!-- ══════════════ D6 · CIERRE - FIN DE LA CINTA ══════════════ -->
+  <section class="slide s6" data-slide="6" data-screen-label="Cierre">
+    <div class="fin-bg" aria-hidden="true"></div>
+    <div class="fin-band" aria-hidden="true"></div>
+    <div class="fin">
+      <div class="fin-eyebrow">FIN DE LA CINTA</div>
+      <h2 class="fin-mark">Backrooms</h2>
+      <div class="fin-plate">Sin salida</div>
+      <p class="fin-tag">NO DEBERÍAS ESTAR AQUÍ.</p>
+      <img class="fin-a24" src="A24_logo.svg" alt="A24" />
+      <div class="fin-rewind">&#9664;&#9664; REBOBINAR · ESC · EXPULSAR CINTA</div>
+    </div>
+    <div class="pagenum">06 / 06</div>
+    <aside class="notes">Gracias. Quedamos atentos a sus preguntas.</aside>
+  </section>
+
+</main>
+</div>
+
+<script>
+  // scale-to-fit: el escenario 1920×1080 se escala al viewport
+  function fit(){
+    const w = window.innerWidth, h = window.innerHeight;
+    const scale = Math.min(w / 1920, h / 1080);
+    document.querySelector('.stage').style.transform = 'scale(' + scale + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  // flash de zap al cambiar de diapositiva (cambio de canal VHS)
+  const zap = document.getElementById('zapfx');
+  function zapFx(){
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    zap.classList.remove('go');
+    void zap.offsetWidth;
+    zap.classList.add('go');
+  }
+
+  // navegación: flechas, espacio, home/end, swipe
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let current = 0;
+  function show(i){
+    if(i < 0) i = 0;
+    if(i > slides.length - 1) i = slides.length - 1;
+    if(i === current) return;
+    slides[current].classList.remove('active');
+    slides[i].classList.add('active');
+    current = i;
+    zapFx();
+  }
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){ e.preventDefault(); show(current + 1); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); show(current - 1); }
+    else if(e.key === 'Home'){ e.preventDefault(); show(0); }
+    else if(e.key === 'End'){ e.preventDefault(); show(slides.length - 1); }
+    else if(e.key === 'F11'){ e.preventDefault();
+      if(!document.fullscreenElement){ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+      else{ document.exitFullscreen && document.exitFullscreen(); }
+    }
+  });
+  let tx = null;
+  document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if(tx == null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 40) show(current + (dx < 0 ? 1 : -1));
+    tx = null;
+  });
+</script>
+
+</body>
+</html>

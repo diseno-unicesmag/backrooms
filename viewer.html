@@ -1,0 +1,1624 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>NOCLIP — Simulador de Plegado Origami y Troquel CAD 1:1 · Silla Backrooms</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+  NOCLIP — Silla Origami Plegable de Pared · Backrooms: sin salida (A24, 2026)
+  Simulador Matemático de Plegado 3D (0% Plano a 100% Plegado) + Troqueles SVG 1:1
+  - Cero piezas de madera falsa: cada cara 3D es el doblado exacto de la lámina de 5 mm.
+  - Inclinación 45° diagonal frontal (noclip) con rotación 360° libre alrededor de la pieza.
+  - Inspección pieza por pieza (Asiento+Patas / Espaldar / Silla Completa / Troquel Plano).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Archivo:ital,wght@0,400;0,500;0,600;1,400&family=VT323&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --wall:#B6A464; --wall-deep:#A7955B; --wall-lit:#C2B273;
+    --paper:#D8CFAF; --paper-deep:#C9BE9B;
+    --moquette:#5E4A32; --ink:#181510;
+    --fluor:#F4F1E4; --phosphor:#9FE870; --rec:#C24B33;
+    --cardboard:#C7A062; --cardboard-edge:#8F6832;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; background:#100E0A; color:var(--ink); font-family:'Archivo',sans-serif; overflow:hidden; }
+
+  .app{ display:flex; flex-direction:column; height:100vh; }
+  header{
+    flex:0 0 auto; background:var(--ink); color:var(--fluor);
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 20px; border-bottom:3px solid #382F22;
+  }
+  header .title{ font-family:'Oswald',sans-serif; font-size:18px; letter-spacing:.14em; text-transform:uppercase; }
+  header .title b{ color:var(--fluor); font-weight:600; }
+  header .meta{ font-family:'VT323',monospace; font-size:18px; letter-spacing:.12em; color:var(--fluor); opacity:.85; }
+
+  .main{ flex:1; display:flex; min-height:0; }
+  .viewport-wrap{ flex:1; position:relative; background:#14110C; min-width:0; }
+  #stage{ width:100%; height:100%; display:block; cursor:grab; }
+  #stage:active{ cursor:grabbing; }
+
+  .sidebar{
+    flex:0 0 430px; background:var(--wall); border-left:4px solid #382F22;
+    overflow-y:auto; padding:20px 22px 30px; display:flex; flex-direction:column; gap:16px;
+    background-image:repeating-linear-gradient(90deg, transparent 0px, transparent 46px, rgba(166,147,90,.28) 46px, rgba(166,147,90,.28) 48px);
+  }
+  .sidebar h1{
+    font-family:'Oswald',sans-serif; font-size:27px; font-weight:700;
+    text-transform:uppercase; letter-spacing:-0.01em; line-height:1.1; color:var(--ink);
+  }
+
+
+  .tab-btn{
+    font-family:'Oswald',sans-serif; font-size:13px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.06em; padding:9px 8px; background:var(--paper); color:var(--ink);
+    border:2px solid var(--ink); cursor:pointer; text-align:center; transition:background .15s;
+  }
+  .tab-btn:hover{ background:var(--wall-lit); }
+  .tab-btn.on{ background:var(--ink); color:var(--fluor); border-color:var(--ink); }
+  .tab-btn.full{ grid-column:span 2; }
+
+  /* Slider de Plegado */
+  .fold-box{
+    background:var(--paper); border:2px solid var(--ink); padding:12px 14px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .fold-head{ display:flex; justify-content:space-between; align-items:baseline; font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; font-size:14px; }
+  .fold-val{ font-family:'VT323',monospace; font-size:22px; color:var(--ink); }
+  .fold-slider{
+    width:100%; height:8px; appearance:none; background:#B8AE90; outline:none; border:1px solid var(--ink);
+  }
+  .fold-slider::-webkit-slider-thumb{
+    appearance:none; width:22px; height:22px; background:var(--ink); cursor:ew-resize; border:2px solid var(--fluor);
+  }
+  .fold-slider::-moz-range-thumb{
+    width:22px; height:22px; background:var(--ink); cursor:ew-resize; border:2px solid var(--fluor);
+  }
+  .fold-legend{ display:flex; justify-content:space-between; font-family:'VT323',monospace; font-size:14px; color:#5E4A32; }
+
+  /* Sliders de Rotación */
+
+  /* Botones de Troquel */
+  .troquel-btns{ display:flex; flex-direction:column; gap:8px; }
+  .btn-troquel{
+    background:var(--ink); color:var(--fluor); border:none; padding:12px 14px;
+    font-family:'Oswald',sans-serif; font-size:13.5px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.07em; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+    transition:background .15s;
+  }
+  .btn-troquel:hover{ background:#332A1F; }
+  .btn-troquel .tag{ font-family:'VT323',monospace; font-size:18px; color:var(--fluor); opacity:.7; }
+
+  /* ── MODO PRESENTACIÓN PANTALLA COMPLETA & ESTÉTICA VHS ── */
+  body.presentation-mode {
+    background: #0C0A08 !important;
+  }
+  body.presentation-mode header,
+  body.presentation-mode footer,
+  body.presentation-mode .sidebar {
+    display: none !important;
+  }
+  body.presentation-mode .app {
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+  body.presentation-mode .main {
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+  body.presentation-mode .viewport-wrap {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+    overflow: hidden !important;
+  }
+  body.presentation-mode #stage {
+    animation: scene-breathe 9s ease-in-out infinite alternate, tape-jump 8.7s steps(1) infinite;
+    transform-origin: center center;
+  }
+
+  @keyframes scene-breathe {
+    0%   { transform: translate(0,0) rotate(0deg) scale(1.02); }
+    45%  { transform: translate(-3px,2px) rotate(.12deg) scale(1.026); }
+    100% { transform: translate(3px,-2px) rotate(-.1deg) scale(1.023); }
+  }
+
+  @keyframes tape-jump {
+    0%,86.9%,89.6%,100% { transform: translate(0,0) skewX(0); }
+    87%   { transform: translate(-7px,2px) skewX(-1.5deg); }
+    88%   { transform: translate(5px,-2px) skewX(1.1deg); }
+    89.2% { transform: translate(-2px,0) skewX(-.4deg); }
+  }
+
+  /* Capas Analógicas VHS */
+  .vhs-overlay {
+    display: none; position: absolute; inset: 0; pointer-events: none; z-index: 20;
+  }
+  body.presentation-mode .vhs-overlay {
+    display: block;
+  }
+  .vhs-scanlines {
+    position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: .38;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(20,17,12,.22) 2px, rgba(20,17,12,.22) 4px);
+  }
+  .vhs-grain {
+    position: absolute; inset: 0; z-index: 11; pointer-events: none; opacity: .085;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.8'/></svg>");
+    animation: grain-shift 1.2s steps(3) infinite;
+  }
+  @keyframes grain-shift {
+    0% { transform: translate(0,0); }
+    33% { transform: translate(-14px,9px); }
+    66% { transform: translate(11px,-7px); }
+    100% { transform: translate(0,0); }
+  }
+  .vhs-track-band {
+    position: absolute; left: -5%; width: 110%; top: -20%; height: 14%; z-index: 12;
+    background: linear-gradient(180deg, transparent, rgba(244,241,228,.14) 28%, rgba(38,32,25,.38) 55%, rgba(244,241,228,.16) 75%, transparent);
+    mix-blend-mode: overlay; pointer-events: none;
+    animation: tape-track 9.5s steps(1) infinite;
+  }
+  @keyframes tape-track {
+    0%, 57% { top: -20%; opacity: 0; }
+    58% { opacity: .9; }
+    71% { top: 112%; opacity: .75; }
+    73%, 100% { top: 112%; opacity: 0; }
+  }
+  .vhs-vignette {
+    position: absolute; inset: 0; z-index: 13; pointer-events: none;
+    background:
+      radial-gradient(ellipse 115% 95% at 50% 50%, transparent 60%, rgba(16,14,10,.35) 85%, rgba(16,14,10,.68) 100%),
+      linear-gradient(90deg, rgba(194,75,51,.05), transparent 8%, transparent 92%, rgba(90,150,110,.055));
+  }
+  .vhs-corner {
+    position: absolute; width: 28px; height: 28px; pointer-events: none; z-index: 14; opacity: .7;
+    border-color: rgba(244,241,228,.55); border-style: solid;
+  }
+  .vhs-corner.top-left { top: 28px; left: 32px; border-width: 2px 0 0 2px; }
+  .vhs-corner.top-right { top: 28px; right: 32px; border-width: 2px 2px 0 0; }
+  .vhs-corner.bottom-left { bottom: 28px; left: 32px; border-width: 0 0 2px 2px; }
+  .vhs-corner.bottom-right { bottom: 28px; right: 32px; border-width: 0 2px 2px 0; }
+
+  .vhs-crosshair {
+    width: 24px; height: 24px; position: relative; opacity: .35;
+  }
+  .vhs-crosshair::before, .vhs-crosshair::after {
+    content: ""; position: absolute; background: var(--fluor);
+  }
+  .vhs-crosshair::before { left: 11px; top: 0; width: 2px; height: 24px; }
+  .vhs-crosshair::after { top: 11px; left: 0; height: 2px; width: 24px; }
+
+  .vhs-osd {
+    position: absolute; inset: 0; z-index: 15; pointer-events: none;
+    padding: 34px 44px; display: flex; flex-direction: column; justify-content: space-between;
+    font-family: 'VT323', monospace; color: var(--fluor);
+    text-shadow: 0 0 8px rgba(0,0,0,.9), 1.5px 1.5px 0 rgba(0,0,0,1);
+    letter-spacing: .12em;
+  }
+  .vhs-osd-top { display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
+  .vhs-rec-wrap { display: flex; align-items: center; gap: 8px; }
+  .vhs-rec-dot {
+    width: 12px; height: 12px; border-radius: 50%; background: #E23628; box-shadow: 0 0 8px #E23628;
+    animation: rec-blink 1s steps(1) infinite;
+  }
+  @keyframes rec-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.15; }
+  }
+  .vhs-rec-text { color: #F4F1E4; font-weight: 600; }
+  .vhs-sp { background: rgba(244,241,228,.15); padding: 1px 6px; font-size: 16px; border: 1px solid rgba(244,241,228,.3); }
+  .vhs-audio-meter { font-size: 14px; letter-spacing: .05em; color: var(--phosphor); opacity: .85; margin-left: 10px; }
+  .vhs-tape-info { font-size: 20px; color: var(--fluor); opacity: .9; }
+
+  .vhs-osd-middle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .vhs-room-tag { font-size: 14px; opacity: .45; letter-spacing: .2em; text-transform: uppercase; }
+
+  .vhs-osd-bottom { display: flex; justify-content: space-between; align-items: baseline; font-size: 24px; }
+  .vhs-timecode-wrap { display: flex; align-items: baseline; gap: 8px; font-size: 28px; color: #FFF; }
+  .vhs-tc-label { font-size: 20px; opacity: .7; }
+  .vhs-hint { font-size: 16px; opacity: .55; letter-spacing: .1em; }
+  .vhs-play-wrap { display: flex; align-items: baseline; gap: 14px; font-size: 22px; color: var(--phosphor); }
+  .vhs-date-stamp { font-size: 18px; color: var(--fluor); opacity: .75; }
+
+  /* Botones de Modo Presentación */
+  .btn-enter-pres {
+    background: #2D2316; color: var(--fluor); border: 2px solid #5A472E;
+    padding: 12px 14px; font-family: 'Oswald', sans-serif; font-size: 13.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: all .2s ease; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  .btn-enter-pres:hover {
+    background: #3F311E; border-color: var(--phosphor); color: var(--phosphor);
+  }
+  .btn-enter-pres .tag {
+    font-family: 'VT323', monospace; font-size: 19px; background: #14110C;
+    padding: 2px 8px; border: 1px solid #5A472E; color: var(--phosphor);
+  }
+  .btn-header-pres {
+    background: #241D14; color: var(--fluor); border: 1px solid #4A3A28;
+    font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase; padding: 6px 14px;
+    cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-header-pres:hover {
+    background: #382D1F; border-color: var(--phosphor); color: var(--phosphor);
+  }
+  .btn-exit-pres {
+    position: absolute; top: 24px; right: 28px; z-index: 30; pointer-events: auto;
+    background: rgba(16,14,10,.78); border: 2px solid var(--fluor); color: var(--fluor);
+    font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .1em; padding: 8px 16px; cursor: pointer; backdrop-filter: blur(4px);
+    transition: all .2s ease; box-shadow: 0 4px 15px rgba(0,0,0,.5);
+  }
+  .btn-exit-pres:hover {
+    background: var(--rec); border-color: var(--rec); color: #FFF;
+  }
+
+  footer{
+    flex:0 0 auto; background:var(--moquette); color:var(--fluor);
+    display:flex; justify-content:space-between; align-items:center;
+    padding:7px 20px; font-family:'VT323',monospace; font-size:16px; letter-spacing:.12em;
+    border-top:3px solid #382F22;
+  }
+
+  /* Modal de Troquel SVG CAD 1:1 */
+  .modal{
+    position:fixed; inset:0; z-index:1000; display:none; background:rgba(14,12,9,.97);
+    padding:16px 22px; flex-direction:column; gap:10px;
+  }
+  .modal.on{ display:flex; }
+  .modal-bar{
+    display:flex; justify-content:space-between; align-items:center; color:var(--fluor);
+    padding-bottom:10px; border-bottom:2px solid #382F22; flex:0 0 auto; gap:16px; flex-wrap:wrap;
+  }
+  .modal-title-wrap{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .modal-title{ font-family:'Oswald',sans-serif; font-size:18px; letter-spacing:.12em; text-transform:uppercase; color:var(--fluor); }
+  .modal-tabs{ display:flex; gap:6px; }
+  .modal-tab-btn{
+    font-family:'Oswald',sans-serif; font-size:12px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.06em; padding:6px 14px; background:rgba(216,207,175,.15); color:var(--fluor);
+    border:1px solid rgba(216,207,175,.3); cursor:pointer; transition:all .15s;
+  }
+  .modal-tab-btn:hover{ background:rgba(216,207,175,.3); border-color:var(--phosphor); color:var(--phosphor); }
+  .modal-tab-btn.on{ background:var(--phosphor); color:var(--ink); border-color:var(--phosphor); font-weight:700; }
+
+  .modal-actions{ display:flex; gap:10px; }
+  .btn-action{
+    font-family:'VT323',monospace; font-size:18px; letter-spacing:.08em; padding:6px 16px;
+    border:none; cursor:pointer; font-weight:600; transition:all .15s;
+  }
+  .btn-action.dl{ background:var(--phosphor); color:var(--ink); }
+  .btn-action.dl:hover{ background:#85C75E; }
+  .btn-action.close{ background:var(--rec); color:var(--fluor); }
+  .btn-action.close:hover{ background:#A83A24; }
+  .modal-canvas{
+    flex:1; background:#F8F6EE; border:2px solid #382F22; overflow:auto;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    box-shadow:inset 0 0 40px rgba(0,0,0,.15);
+  }
+  .modal-canvas svg{ max-width:100%; max-height:100%; box-shadow:0 12px 35px rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="title">NOCLIP · <b>Silla plegable</b></div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="btn-header-pres" id="btnHeaderPlantillas" style="background:var(--phosphor); color:var(--ink); font-weight:700; border-color:var(--phosphor);" title="Ver Plantillas Técnicas y Troqueles CAD 1:1">📐 VER PLANTILLAS [CAD 1:1]</button>
+      <button class="btn-header-pres" id="btnHeaderPres" title="Modo Presentación VHS a Pantalla Completa (F)">📹 PRESENTACIÓN [F]</button>
+      <div class="meta">A24 · 2026 · TALLER POP</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="viewport-wrap">
+      <canvas id="stage"></canvas>
+
+      <!-- Capas de Efecto Analógico VHS / Modo Presentación Found Footage -->
+      <div class="vhs-overlay" id="vhsOverlay">
+        <div class="vhs-scanlines"></div>
+        <div class="vhs-grain"></div>
+        <div class="vhs-track-band"></div>
+        <div class="vhs-vignette"></div>
+
+        <!-- Retícula de esquinas (Viewfinder) -->
+        <div class="vhs-corner top-left"></div>
+        <div class="vhs-corner top-right"></div>
+        <div class="vhs-corner bottom-left"></div>
+        <div class="vhs-corner bottom-right"></div>
+
+        <!-- Diegetic OSD HUD -->
+        <div class="vhs-osd">
+          <div class="vhs-osd-top">
+            <div class="vhs-rec-wrap">
+              <span class="vhs-rec-dot"></span>
+              <span class="vhs-rec-text">REC</span>
+              <span class="vhs-sp">[SP]</span>
+              <span class="vhs-audio-meter">L ❚❚❚❚❚❚❚❚ R ❚❚❚❚❚❚</span>
+            </div>
+            <div class="vhs-tape-info">
+              <span>TAPE 04 · LEVEL 0 &nbsp;|&nbsp; 12.4V [■■■]</span>
+            </div>
+          </div>
+
+          <div class="vhs-osd-middle">
+            <div class="vhs-crosshair"></div>
+            <div class="vhs-room-tag">BACKROOMS · SALA 105 · NOCLIP EXPERIMENT</div>
+          </div>
+
+          <div class="vhs-osd-bottom">
+            <div class="vhs-timecode-wrap">
+              <span class="vhs-tc-label">TC:</span>
+              <span id="vhsTimecode">00:14:32:18</span>
+            </div>
+            <div class="vhs-hint">
+              ÓRBITA 360° LIBRE [ARRASTRA] · ZOOM [RUEDA] · [ESC] O BOTÓN PARA SALIR
+            </div>
+            <div class="vhs-play-wrap">
+              <span>PLAY ▶</span>
+              <span class="vhs-date-stamp">04.SEP.2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón Flotante para Salir de Presentación -->
+        <button class="btn-exit-pres" id="btnExitPres" title="Salir de Modo Presentación (ESC)">
+          ✕ SALIR [ESC]
+        </button>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <h1>Silla NOCLIP</h1>
+        <span style="font-family:'VT323',monospace; font-size:16px; color:#5E4A32;">CAD 1:1</span>
+      </div>
+
+      <!-- Botón Modo Presentación VHS -->
+      <button class="btn-enter-pres" id="btnEnterPres" title="Iniciar Modo Presentación VHS a Pantalla Completa (F)">
+        <span>📹 MODO PRESENTACIÓN [PANTALLA COMPLETA]</span>
+        <span class="tag">F</span>
+      </button>
+
+      <div class="fold-box">
+        <div class="fold-head">
+          <span>Plegado:</span>
+          <span class="fold-val" id="foldVal">100%</span>
+        </div>
+        <input type="range" class="fold-slider" id="foldSlider" min="0" max="100" value="100" step="1" />
+        <div class="fold-legend">
+          <span>0% PLANA</span>
+          <span>100% ARMADA</span>
+        </div>
+      </div>
+
+      <!-- Inspección Modular 3D -->
+      <div class="grid-tabs" style="grid-template-columns: 1.2fr 1fr 1fr;">
+        <button class="tab-btn on" id="tabFull">COMPLETA</button>
+        <button class="tab-btn" id="tabPiece1">ESPALDAR</button>
+        <button class="tab-btn" id="tabPiece2">ASIENTO</button>
+      </div>
+
+      <!-- Control de Texturas Gráficas Personalizadas (2 Plantillas Independientes) -->
+      <div class="fold-box" style="background:var(--paper); border:2px solid var(--ink); gap:10px;">
+        <div class="fold-head">
+          <span>TEXTURAS GRÁFICAS:</span>
+          <span class="fold-val" style="font-size:16px; color:#5E4A32;">2 PLANTILLAS</span>
+        </div>
+
+        <!-- Ranura Textura 1: Espaldar -->
+        <div style="display:flex; flex-direction:column; gap:4px; padding:6px 8px; background:#E2D9BE; border:1px solid #382F22;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-family:'Oswald',sans-serif; font-size:12px; font-weight:600;">
+            <span>PIEZA 1: ESPALDAR (720×720 mm)</span>
+            <span id="statusTex1" style="font-family:'VT323',monospace; font-size:15px; color:#5E4A32;">KRAFT</span>
+          </div>
+          <input type="file" id="inputTex1" accept="image/png, image/jpeg, image/webp" style="display:none;" />
+          <button class="btn-troquel" id="btnUploadTex1" style="background:#243B20; padding:8px 10px; font-size:12px; justify-content:center;">
+            <span>🎨 CARGAR PNG ESPALDAR [1:1]</span>
+          </button>
+        </div>
+
+        <!-- Ranura Textura 2: Asiento y Patas -->
+        <div style="display:flex; flex-direction:column; gap:4px; padding:6px 8px; background:#E2D9BE; border:1px solid #382F22;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-family:'Oswald',sans-serif; font-size:12px; font-weight:600;">
+            <span>PIEZA 2: ASIENTO Y PATAS (860×960 mm)</span>
+            <span id="statusTex2" style="font-family:'VT323',monospace; font-size:15px; color:#5E4A32;">KRAFT</span>
+          </div>
+          <input type="file" id="inputTex2" accept="image/png, image/jpeg, image/webp" style="display:none;" />
+          <button class="btn-troquel" id="btnUploadTex2" style="background:#243B20; padding:8px 10px; font-size:12px; justify-content:center;">
+            <span>🎨 CARGAR PNG ASIENTO/PATAS [1:1]</span>
+          </button>
+        </div>
+
+        <button class="btn-troquel" id="btnResetAllTex" style="background:#4A2420; justify-content:center; padding:7px 12px; font-size:12px; display:none;">
+          <span>RESETEAR A CARTÓN KRAFT</span>
+        </button>
+
+        <div style="font-family:'VT323',monospace; font-size:13.5px; color:#5E4A32; line-height:1.2;">
+          Exporta cada PNG a sangre con el tamaño de su lienzo (Troquel 1: 720×720 mm | Troquel 2: 860×960 mm) y cárgalos independientemente.
+        </div>
+      </div>
+
+      <!-- Sección de Planos Técnicos y Troqueles CAD 1:1 -->
+      <div class="fold-box" style="background:#1C1710; border:2px solid #5A472E; gap:8px;">
+        <div class="fold-head">
+          <span style="color:var(--fluor);">PLANTILLAS Y TROQUEL:</span>
+          <span class="fold-val" style="font-size:15px; color:var(--phosphor);">ESCALA 1:1 CAD</span>
+        </div>
+        <button class="btn-troquel" id="btnOpenModalMaster" style="background:var(--phosphor); color:var(--ink); font-weight:700; justify-content:center; padding:11px 12px; font-size:13px;">
+          <span>📐 VER PLANTILLAS CAD [TROQUEL 1:1]</span>
+        </button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button class="btn-troquel" id="btnOpenArriba" style="padding:8px 4px; font-size:11px; justify-content:center; background:#292218;">
+            <span>1. ESPALDAR (720×720)</span>
+          </button>
+          <button class="btn-troquel" id="btnOpenAbajo" style="padding:8px 4px; font-size:11px; justify-content:center; background:#292218;">
+            <span>2. ASIENTO (860×960)</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <span>NOCLIP · CARTÓN CORRUGADO 5 MM · ESCALA 1:1</span>
+  </footer>
+</div>
+
+<!-- Modal Troquel SVG CAD 1:1 -->
+<div class="modal" id="troquelModal">
+  <div class="modal-bar">
+    <div class="modal-title-wrap">
+      <div class="modal-title" id="modalTitle">PLANO TÉCNICO CAD 1:1</div>
+      <div class="modal-tabs">
+        <button class="modal-tab-btn on" id="mTabArriba">PIEZA 1: ESPALDAR (720×720 mm)</button>
+        <button class="modal-tab-btn" id="mTabAbajo">PIEZA 2: ASIENTO Y PATAS (860×960 mm)</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-action dl" id="btnDownloadSvg">DESCARGAR SVG [1:1 CAD]</button>
+      <button class="btn-action close" id="btnCloseModal">✕ CERRAR [ESC]</button>
+    </div>
+  </div>
+  <div class="modal-canvas" id="modalCanvas"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════════════════
+     PARÁMETROS MATEMÁTICOS REALES DEL TROQUEL (en milímetros)
+     ══════════════════════════════════════════════════════════════════ */
+  const PARAMS = {
+    W: 440,            // Ancho total del asiento y espaldar
+    D: 250,            // Profundidad compacta del asiento noclip (reducida 75 mm, ~1/4)
+    H_seat: 450,       // Altura virtual del plano de asiento
+    apronH: 50,        // Altura de los faldones (frontal y laterales)
+    legSection: 36,    // Sección cuadrada de las patas (36×36 mm)
+    legH: 200,         // Longitud libre de patas noclip (reducida 75 mm, para igualar total con faldón 50+200=250 mm)
+    legFlap: 15,       // Pestaña de cierre para encolar el tubo
+    legFootTab: 51,    // Tapa/Pestaña de pie que sella por completo el hueco en inglete de la pata contra la pared (51 mm = 36×√2)
+    backH: 300,        // Altura del cuerpo del espaldar (recortado tras la 4ª barra)
+    backArchH: 75,     // Flecha del arco superior del espaldar
+    backFlange: 30,    // Aletas laterales de rigidización
+    backBottomTab: 45, // Pestaña inferior de anclaje a pared
+    wallTab: 71,       // Solapa superior a pared del asiento (71 mm = 50×√2, cubre toda la diagonal del faldón hasta abajo)
+    slatCount: 3,      // 3 calados horizontales (eliminada la rendija inferior)
+    slatOpeningH: 36,  // Altura de calados
+    slatOpeningW: 340, // Ancho de calados
+    slatBarH: 36,      // Altura de travesaños
+    T: 5               // Espesor del cartón corrugado (5 mm)
+  };
+
+  /* ══════════════════════════════════════════════════════════════════
+     ESCENA THREE.JS Y CÁMARA 360° TOTALMENTE LIBRE
+     ══════════════════════════════════════════════════════════════════ */
+  let isPresentationMode = false;
+  const canvas = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1A1712);
+  scene.fog = new THREE.Fog(0x1A1712, 1400, 4200);
+
+  const camera = new THREE.PerspectiveCamera(38, 1, 10, 50000);
+  let isDragging = false, lastX = 0, lastY = 0;
+  let camAzimuth = 0.55, camElevation = 0.22, camDistance = 1500;
+  const camTarget = new THREE.Vector3(0, 990, 120);
+
+  function resize(){
+    const box = canvas.parentElement.getBoundingClientRect();
+    if(isPresentationMode){
+      renderer.setPixelRatio(0.85); // Estética videocámara analógica VHS y fluidez garantizada 60 FPS
+    } else {
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    }
+    renderer.setSize(box.width, box.height, false);
+    camera.aspect = box.width / box.height;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  // Iluminación cálida Backrooms (fluorescente difusa + directional)
+  scene.add(new THREE.AmbientLight(0xE0D8B8, 0.8));
+  const mainLight = new THREE.DirectionalLight(0xFFF6DE, 0.95);
+  mainLight.position.set(-1200, 5600, 2800);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.width = 2048;
+  mainLight.shadow.mapSize.height = 2048;
+  mainLight.shadow.camera.near = 100;
+  mainLight.shadow.camera.far = 12000;
+  mainLight.shadow.camera.left = -3500;
+  mainLight.shadow.camera.right = 3500;
+  mainLight.shadow.camera.top = 5000;
+  mainLight.shadow.camera.bottom = -500;
+  mainLight.shadow.bias = -0.0008;
+  scene.add(mainLight);
+
+  const fillLight = new THREE.DirectionalLight(0xC4D4E8, 0.4);
+  fillLight.position.set(1000, 2500, -400);
+  scene.add(fillLight);
+
+  const bottomLight = new THREE.DirectionalLight(0x7A6242, 0.25);
+  bottomLight.position.set(0, -200, 400);
+  scene.add(bottomLight);
+
+  /* Materiales planos de cartón corrugado kraft con soporte de texturas independientes para cada troquel */
+  const matPiece1 = new THREE.MeshLambertMaterial({ color: 0xC7A062 }); // Troquel 1: Espaldar (720×720 mm)
+  const matPiece2 = new THREE.MeshLambertMaterial({ color: 0xC7A062 }); // Troquel 2: Asiento y Patas (860×960 mm)
+  const matCardboard = matPiece1; // compatibilidad
+  const matSeat = matPiece2;
+  const matEdge = new THREE.MeshLambertMaterial({ color: 0x8F6832 }); // Canto interior flauta cartón
+
+  /* ══════════════════════════════════════════════════════════════════
+     MAPEADO UV EXACTO 1:1 SEGÚN LIENZO 2D DE CADA TROQUEL SVG
+     ══════════════════════════════════════════════════════════════════ */
+  // Troquel 1: Lienzo 720 × 720 mm, ox = 130, oy = 135
+  function setUVsPiece1(geo, fn){
+    const pos = geo.attributes.position;
+    if(!geo.attributes.uv) return;
+    const uvs = geo.attributes.uv;
+    for(let i = 0; i < pos.count; i++){
+      const { svgX, svgY } = fn(pos.getX(i), pos.getY(i), pos.getZ(i));
+      uvs.setXY(i, Math.max(0, Math.min(1, svgX / 720)), Math.max(0, Math.min(1, 1.0 - svgY / 720)));
+    }
+    uvs.needsUpdate = true;
+  }
+
+  // Troquel 2: Lienzo 860 × 960 mm, ox = 210, oy = 110
+  function setUVsPiece2(geo, fn){
+    const pos = geo.attributes.position;
+    if(!geo.attributes.uv) return;
+    const uvs = geo.attributes.uv;
+    for(let i = 0; i < pos.count; i++){
+      const { svgX, svgY } = fn(pos.getX(i), pos.getY(i), pos.getZ(i));
+      uvs.setXY(i, Math.max(0, Math.min(1, svgX / 860)), Math.max(0, Math.min(1, 1.0 - svgY / 960)));
+    }
+    uvs.needsUpdate = true;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ENTORNO CONMUTABLE: VACÍO / SUELO / PARED 45°
+     Pared monumental Backrooms y suelo de moqueta a escala arquitectónica
+     ══════════════════════════════════════════════════════════════════ */
+  const envGroup = new THREE.Group();
+  const floorGroup = new THREE.Group();
+  const wall45Group = new THREE.Group();
+
+  // Suelo de moqueta monumental continuo (36 × 36 metros, centrado en Z = 0 para cubrir ambos lados del muro sin cortes visibles)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(36000, 36000), new THREE.MeshLambertMaterial({ color: 0x6E5638 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, 0, 0); // Se extiende 18 m adelante (+Z) y 18 m atrás (-Z)
+  floor.receiveShadow = true;
+  floorGroup.add(floor);
+
+  // Pared amarilla monumental sólida (36 metros de largo × 18 metros de alto)
+  const matWall = new THREE.MeshLambertMaterial({ color: 0xB6A464 });
+  const wallPanel = new THREE.Mesh(new THREE.BoxGeometry(36000, 18000, 150), matWall);
+  wallPanel.position.set(0, 9000, -75); // Cara frontal en Z = 0 exacto, va desde Y = 0 (suelo) hasta Y = 18000
+  wallPanel.receiveShadow = true;
+  wall45Group.add(wallPanel);
+
+  envGroup.add(floorGroup);
+  envGroup.add(wall45Group);
+  scene.add(envGroup);
+
+  /* Escena Backrooms: Silla POP Noclip montada a 45° en pared monumental */
+  const sceneMode = 'wall45';
+  floorGroup.visible = true;
+  wall45Group.visible = true;
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODELADO MATEMÁTICO DEL TROQUEL EN 3D (RIG DE PLEGADO REAL)
+     ══════════════════════════════════════════════════════════════════ */
+  // Contenedor principal de la instalación
+  const chairTransformGroup = new THREE.Group();
+  scene.add(chairTransformGroup);
+
+  /* ── PIEZA 1: ESPALDAR NOCLIP (TROQUEL 1 · ARRIBA) ─── */
+  const piece1Group = new THREE.Group();
+  chairTransformGroup.add(piece1Group);
+
+  /* ── PIEZA 2: ASIENTO Y PATAS NOCLIP (TROQUEL 2 · ABAJO) ─── */
+  const piece2Group = new THREE.Group();
+  chairTransformGroup.add(piece2Group);
+
+  function updateChairPlacement(){
+    // Silla Noclip suspendida en la pared a altura natural (separada ~57 cm del piso):
+    // PIEZA 2 (Asiento y Patas): asiento a Y = 920 mm (patas flotando a ~57 cm del suelo)
+    const seatWallY = 920;
+    piece2Group.position.set(0, seatWallY, 0);
+    piece2Group.rotation.set(Math.PI / 4, 0, 0);
+
+    // PIEZA 1 (Espaldar): separada 165 mm hacia arriba de la sentadera (a Y = 1085 mm)
+    const backWallY = seatWallY + 165;
+    piece1Group.position.set(0, backWallY, 0);
+    piece1Group.rotation.set((35 * Math.PI / 180), 0, 0);
+
+    camTarget.set(0, seatWallY + 70, 120);
+  }
+  updateChairPlacement();
+
+  const backPivot = new THREE.Group();
+  backPivot.position.set(0, 0, 0);
+  piece1Group.add(backPivot);
+
+  // Forma continua del espaldar recortado tras la 4ª barra
+  const backShape = new THREE.Shape();
+  backShape.moveTo(-PARAMS.W / 2, 0);
+  backShape.lineTo(-PARAMS.W / 2, PARAMS.backH);
+  backShape.quadraticCurveTo(0, PARAMS.backH + PARAMS.backArchH, PARAMS.W / 2, PARAMS.backH);
+  backShape.lineTo(PARAMS.W / 2, 0);
+  backShape.closePath();
+
+  // 4 Calados horizontales
+  // 3 Calados horizontales (se retiró la rendija inferior por petición de diseño)
+  const slatYPositions = [234, 162, 90];
+  for(let i = 0; i < 3; i++){
+    const slotY = slatYPositions[i];
+    const hole = new THREE.Path();
+    const hw = PARAMS.slatOpeningW / 2;
+    const hh = PARAMS.slatOpeningH;
+    hole.moveTo(-hw, slotY);
+    hole.lineTo(hw, slotY);
+    hole.lineTo(hw, slotY + hh);
+    hole.lineTo(-hw, slotY + hh);
+    hole.closePath();
+    backShape.holes.push(hole);
+  }
+
+  const backGeo = new THREE.ExtrudeGeometry(backShape, { depth: PARAMS.T, bevelEnabled: false });
+  backGeo.translate(0, 0, -PARAMS.T / 2);
+  setUVsPiece1(backGeo, (x, y) => ({ svgX: x + 350, svgY: 510 - y }));
+  const backMesh = new THREE.Mesh(backGeo, matPiece1);
+  backMesh.castShadow = true;
+  backMesh.receiveShadow = true;
+  backPivot.add(backMesh);
+
+  // Pestaña inferior del espaldar (hinge en y = 0, z = 0): completamente recta sin hendidos (440 × 45 mm)
+  const backBottomTabPivot = new THREE.Group();
+  backBottomTabPivot.position.set(0, 0, 0);
+  const geoBottomTab = new THREE.BoxGeometry(PARAMS.W, PARAMS.backBottomTab, PARAMS.T);
+  setUVsPiece1(geoBottomTab, (x, y) => ({ svgX: x + 350, svgY: 532.5 - y }));
+  const backBottomTabMesh = new THREE.Mesh(geoBottomTab, matPiece1);
+  backBottomTabMesh.position.set(0, -PARAMS.backBottomTab / 2, 0);
+  backBottomTabMesh.castShadow = true;
+  backBottomTabMesh.receiveShadow = true;
+  backBottomTabPivot.add(backBottomTabMesh);
+  backPivot.add(backBottomTabPivot);
+
+  // Aletas laterales de refuerzo con corte en inglete al muro (30 × 300 mm con diagonal en la base para no penetrar el muro)
+  const flangeCutH = PARAMS.backFlange / Math.tan(35 * Math.PI / 180); // 42.84 mm exactos al muro a 35°
+
+  const backFlangeLeftPivot = new THREE.Group();
+  backFlangeLeftPivot.position.set(-PARAMS.W / 2, 0, 0);
+  const shapeFlangeLeft = new THREE.Shape();
+  shapeFlangeLeft.moveTo(0, 0);
+  shapeFlangeLeft.lineTo(-PARAMS.backFlange, flangeCutH);
+  shapeFlangeLeft.lineTo(-PARAMS.backFlange, PARAMS.backH);
+  shapeFlangeLeft.lineTo(0, PARAMS.backH);
+  shapeFlangeLeft.closePath();
+  const geoFlangeLeft = new THREE.ExtrudeGeometry(shapeFlangeLeft, { depth: PARAMS.T, bevelEnabled: false });
+  geoFlangeLeft.translate(0, 0, -PARAMS.T / 2);
+  setUVsPiece1(geoFlangeLeft, (x, y) => ({ svgX: 130 + x, svgY: 510 - y }));
+  const bflMesh = new THREE.Mesh(geoFlangeLeft, matPiece1);
+  bflMesh.castShadow = true;
+  bflMesh.receiveShadow = true;
+  backFlangeLeftPivot.add(bflMesh);
+  backPivot.add(backFlangeLeftPivot);
+
+  const backFlangeRightPivot = new THREE.Group();
+  backFlangeRightPivot.position.set(PARAMS.W / 2, 0, 0);
+  const shapeFlangeRight = new THREE.Shape();
+  shapeFlangeRight.moveTo(0, 0);
+  shapeFlangeRight.lineTo(PARAMS.backFlange, flangeCutH);
+  shapeFlangeRight.lineTo(PARAMS.backFlange, PARAMS.backH);
+  shapeFlangeRight.lineTo(0, PARAMS.backH);
+  shapeFlangeRight.closePath();
+  const geoFlangeRight = new THREE.ExtrudeGeometry(shapeFlangeRight, { depth: PARAMS.T, bevelEnabled: false });
+  geoFlangeRight.translate(0, 0, -PARAMS.T / 2);
+  setUVsPiece1(geoFlangeRight, (x, y) => ({ svgX: 570 + x, svgY: 510 - y }));
+  const bfrMesh = new THREE.Mesh(geoFlangeRight, matPiece1);
+  bfrMesh.castShadow = true;
+  bfrMesh.receiveShadow = true;
+  backFlangeRightPivot.add(bfrMesh);
+  backPivot.add(backFlangeRightPivot);
+
+
+  /* ── PIEZA 2: ASIENTO Y PATAS NOCLIP (TROQUEL 2 · ABAJO) ─── */
+  // 1. Asiento central (Plano de referencia)
+  const geoSeat = new THREE.BoxGeometry(PARAMS.W, PARAMS.T, PARAMS.D);
+  setUVsPiece2(geoSeat, (x, y, z) => ({ svgX: x + 430, svgY: 306 + z }));
+  const seatMesh = new THREE.Mesh(geoSeat, matPiece2);
+  seatMesh.position.set(0, 0, PARAMS.D / 2);
+  seatMesh.castShadow = true;
+  seatMesh.receiveShadow = true;
+  piece2Group.add(seatMesh);
+
+  // 2. Solapa superior a pared (hinge en z = 0)
+  const wallTabPivot = new THREE.Group();
+  wallTabPivot.position.set(0, 0, 0);
+  const geoWallTab = new THREE.BoxGeometry(PARAMS.W, PARAMS.T, PARAMS.wallTab);
+  setUVsPiece2(geoWallTab, (x, y, z) => ({ svgX: x + 430, svgY: 145.5 + z }));
+  const wallTabMesh = new THREE.Mesh(geoWallTab, matPiece2);
+  wallTabMesh.position.set(0, 0, -PARAMS.wallTab / 2);
+  wallTabMesh.castShadow = true;
+  wallTabMesh.receiveShadow = true;
+  wallTabPivot.add(wallTabMesh);
+  piece2Group.add(wallTabPivot);
+
+  // 3. Faldón lateral izquierdo con corte diagonal a 45° en la arista trasera (hinge en x = -W/2)
+  const flapLeftPivot = new THREE.Group();
+  flapLeftPivot.position.set(-PARAMS.W / 2, 0, 0);
+
+  const flapLeftShape = new THREE.Shape();
+  flapLeftShape.moveTo(0, 0);
+  flapLeftShape.lineTo(0, PARAMS.D);
+  flapLeftShape.lineTo(-PARAMS.apronH, PARAMS.D);
+  flapLeftShape.lineTo(-PARAMS.apronH, PARAMS.apronH);
+  flapLeftShape.closePath();
+
+  const flapLeftGeo = new THREE.ExtrudeGeometry(flapLeftShape, { depth: PARAMS.T, bevelEnabled: false });
+  flapLeftGeo.translate(0, 0, -PARAMS.T / 2);
+  flapLeftGeo.rotateX(Math.PI / 2);
+  setUVsPiece2(flapLeftGeo, (x, y, z) => ({ svgX: 210 + x, svgY: 181 + z }));
+  const flapLeftMesh = new THREE.Mesh(flapLeftGeo, matPiece2);
+  flapLeftMesh.castShadow = true;
+  flapLeftMesh.receiveShadow = true;
+  flapLeftPivot.add(flapLeftMesh);
+  piece2Group.add(flapLeftPivot);
+
+  // 4. Faldón lateral derecho con corte diagonal a 45° en la arista trasera (hinge en x = +W/2)
+  const flapRightPivot = new THREE.Group();
+  flapRightPivot.position.set(PARAMS.W / 2, 0, 0);
+
+  const flapRightShape = new THREE.Shape();
+  flapRightShape.moveTo(0, 0);
+  flapRightShape.lineTo(0, PARAMS.D);
+  flapRightShape.lineTo(PARAMS.apronH, PARAMS.D);
+  flapRightShape.lineTo(PARAMS.apronH, PARAMS.apronH);
+  flapRightShape.closePath();
+
+  const flapRightGeo = new THREE.ExtrudeGeometry(flapRightShape, { depth: PARAMS.T, bevelEnabled: false });
+  flapRightGeo.translate(0, 0, -PARAMS.T / 2);
+  flapRightGeo.rotateX(Math.PI / 2);
+  setUVsPiece2(flapRightGeo, (x, y, z) => ({ svgX: 650 + x, svgY: 181 + z }));
+  const flapRightMesh = new THREE.Mesh(flapRightGeo, matPiece2);
+  flapRightMesh.castShadow = true;
+  flapRightMesh.receiveShadow = true;
+  flapRightPivot.add(flapRightMesh);
+  piece2Group.add(flapRightPivot);
+
+  // 5. Faldón Frontal + 2 Patas Delanteras Plegables en Prisma con corte a 45°
+  const frontApronPivot = new THREE.Group();
+  frontApronPivot.position.set(0, 0, PARAMS.D);
+  const geoFrontApron = new THREE.BoxGeometry(PARAMS.W, PARAMS.apronH, PARAMS.T);
+  setUVsPiece2(geoFrontApron, (x, y) => ({ svgX: x + 430, svgY: 456 - y }));
+  const frontApronMesh = new THREE.Mesh(geoFrontApron, matPiece2);
+  frontApronMesh.position.set(0, -PARAMS.apronH / 2, 0);
+  frontApronMesh.castShadow = true;
+  frontApronMesh.receiveShadow = true;
+  frontApronPivot.add(frontApronMesh);
+  piece2Group.add(frontApronPivot);
+
+  // Construcción de cada pata delantera a partir de 4 caras de 36 mm con corte en inglete a 45°
+  function buildFoldableLeg(isLeft){
+    const legContainer = new THREE.Group();
+    const legStartX = isLeft ? (-PARAMS.W / 2 + PARAMS.legSection / 2) : (PARAMS.W / 2 - PARAMS.legSection / 2);
+    legContainer.position.set(legStartX, -PARAMS.apronH, 0);
+
+    const s = isLeft ? 1 : -1; // Dirección hacia el interior
+    const sec = PARAMS.legSection; // 36 mm
+    const hFront = PARAMS.legH; // 200 mm
+    const hBack = PARAMS.legH - sec; // 164 mm
+    const flapW = PARAMS.legFlap; // 15 mm
+    const T = PARAMS.T; // 5 mm
+
+    // Cara 1: Frontal (36 mm × 200 mm × 5 mm)
+    const geo1 = new THREE.BoxGeometry(sec, hFront, T);
+    const legBaseX = isLeft ? 210 : 614;
+    setUVsPiece2(geo1, (x, y) => ({ svgX: legBaseX + 18 + x, svgY: 581 - y }));
+    const face1Mesh = new THREE.Mesh(geo1, matPiece2);
+    face1Mesh.position.set(0, -hFront / 2, 0);
+    face1Mesh.castShadow = true;
+    face1Mesh.receiveShadow = true;
+    legContainer.add(face1Mesh);
+
+    // Pestaña de pie a pared en Cara 1 (36 × 51 mm)
+    const footTabPivot = new THREE.Group();
+    footTabPivot.position.set(0, -hFront, 0);
+    const geoFoot = new THREE.BoxGeometry(sec, PARAMS.legFootTab, T);
+    setUVsPiece2(geoFoot, (x, y) => ({ svgX: legBaseX + 18 + x, svgY: 681 - (y - PARAMS.legFootTab / 2) }));
+    const footTabMesh = new THREE.Mesh(geoFoot, matPiece2);
+    footTabMesh.position.set(0, -PARAMS.legFootTab / 2, 0);
+    footTabMesh.castShadow = true;
+    footTabMesh.receiveShadow = true;
+    footTabPivot.add(footTabMesh);
+    legContainer.add(footTabPivot);
+
+    // Bisagra 1-2 (en x = s * sec / 2)
+    const hinge1_2 = new THREE.Group();
+    hinge1_2.position.set(s * (sec / 2), 0, 0);
+    legContainer.add(hinge1_2);
+
+    // Cara 2: Diagonal
+    const shape2 = new THREE.Shape();
+    shape2.moveTo(0, 0);
+    shape2.lineTo(s * sec, 0);
+    shape2.lineTo(s * sec, -hBack);
+    shape2.lineTo(0, -hFront);
+    shape2.closePath();
+    const geo2 = new THREE.ExtrudeGeometry(shape2, { depth: T, bevelEnabled: false });
+    geo2.translate(0, 0, -T / 2);
+    const c2X = isLeft ? 246 : 578;
+    setUVsPiece2(geo2, (x, y) => ({ svgX: isLeft ? (c2X + x) : (c2X + sec - x), svgY: 481 - y }));
+    const face2Mesh = new THREE.Mesh(geo2, matPiece2);
+    face2Mesh.castShadow = true;
+    face2Mesh.receiveShadow = true;
+    hinge1_2.add(face2Mesh);
+
+    // Bisagra 2-3 (en x = s * sec)
+    const hinge2_3 = new THREE.Group();
+    hinge2_3.position.set(s * sec, 0, 0);
+    hinge1_2.add(hinge2_3);
+
+    // Cara 3: Trasera (36 mm × 164 mm)
+    const geo3 = new THREE.BoxGeometry(sec, hBack, T);
+    const c3X = isLeft ? 282 : 542;
+    setUVsPiece2(geo3, (x, y) => ({ svgX: c3X + 18 + x, svgY: 481 - (y - hBack / 2) }));
+    const face3Mesh = new THREE.Mesh(geo3, matPiece2);
+    face3Mesh.position.set(s * (sec / 2), -hBack / 2, 0);
+    face3Mesh.castShadow = true;
+    face3Mesh.receiveShadow = true;
+    hinge2_3.add(face3Mesh);
+
+    // Bisagra 3-4 (en x = s * sec)
+    const hinge3_4 = new THREE.Group();
+    hinge3_4.position.set(s * sec, 0, 0);
+    hinge2_3.add(hinge3_4);
+
+    // Cara 4: Diagonal
+    const shape4 = new THREE.Shape();
+    shape4.moveTo(0, 0);
+    shape4.lineTo(s * sec, 0);
+    shape4.lineTo(s * sec, -hFront);
+    shape4.lineTo(0, -hBack);
+    shape4.closePath();
+    const geo4 = new THREE.ExtrudeGeometry(shape4, { depth: T, bevelEnabled: false });
+    geo4.translate(0, 0, -T / 2);
+    const c4X = isLeft ? 318 : 506;
+    setUVsPiece2(geo4, (x, y) => ({ svgX: isLeft ? (c4X + x) : (c4X + sec - x), svgY: 481 - y }));
+    const face4Mesh = new THREE.Mesh(geo4, matPiece2);
+    face4Mesh.castShadow = true;
+    face4Mesh.receiveShadow = true;
+    hinge3_4.add(face4Mesh);
+
+    // Bisagra 4-Flap (en x = s * sec)
+    const hinge4_flap = new THREE.Group();
+    hinge4_flap.position.set(s * sec, 0, 0);
+    hinge3_4.add(hinge4_flap);
+
+    // Flap de encolado (15 mm con chaflán)
+    const shapeFlap = new THREE.Shape();
+    shapeFlap.moveTo(0, 0);
+    shapeFlap.lineTo(s * flapW, 0);
+    shapeFlap.lineTo(s * flapW, -(hFront - 25));
+    shapeFlap.lineTo(0, -(hFront - 10));
+    shapeFlap.closePath();
+    const geoFlap = new THREE.ExtrudeGeometry(shapeFlap, { depth: T, bevelEnabled: false });
+    geoFlap.translate(0, 0, -T / 2);
+    const flapX = isLeft ? 354 : 491;
+    setUVsPiece2(geoFlap, (x, y) => ({ svgX: isLeft ? (flapX + x) : (flapX + flapW - x), svgY: 481 - y }));
+    const flapMesh = new THREE.Mesh(geoFlap, matPiece2);
+    hinge4_flap.add(flapMesh);
+
+    return {
+      container: legContainer,
+      hinge1_2,
+      hinge2_3,
+      hinge3_4,
+      hinge4_flap,
+      footTabPivot,
+      isLeft
+    };
+  }
+
+  const leftLeg = buildFoldableLeg(true);
+  frontApronPivot.add(leftLeg.container);
+
+  const rightLeg = buildFoldableLeg(false);
+  frontApronPivot.add(rightLeg.container);
+
+  /* ══════════════════════════════════════════════════════════════════
+     FUNCIÓN MATEMÁTICA DE PLEGADO DINÁMICO (0.0 A 1.0)
+     ══════════════════════════════════════════════════════════════════ */
+  let currentFold = 1.0;
+
+  function applyFold(p){
+    currentFold = Math.max(0, Math.min(1, p));
+    const rad90 = Math.PI / 2;
+    const isWall = (sceneMode === 'wall45');
+
+    // ── PIEZA 2: ASIENTO Y PATAS ──
+    // 1. Faldones laterales doblan 90° hacia abajo al armar
+    flapLeftPivot.rotation.z  = currentFold * rad90;
+    flapRightPivot.rotation.z = -currentFold * rad90;
+
+    // 2. Solapa a pared: en wall45 dobla 135° para quedar plana vertical contra el muro; en suelo dobla 90°
+    const wallTabAngle = isWall ? (3 * Math.PI / 4) : rad90;
+    wallTabPivot.rotation.x = -currentFold * wallTabAngle;
+
+    // 3. Faldón frontal: cuelga a 90° al armar (p=1), se extiende plano al frente al desarmar (p=0)
+    const unfold = (1 - currentFold) * rad90;
+    frontApronPivot.rotation.x = -unfold;
+
+    // 4. Patas: doblado en tubos 36×36 hacia atrás (hacia el interior/muro)
+    leftLeg.hinge1_2.rotation.y = currentFold * rad90;
+    leftLeg.hinge2_3.rotation.y = currentFold * rad90;
+    leftLeg.hinge3_4.rotation.y = currentFold * rad90;
+    leftLeg.hinge4_flap.rotation.y = currentFold * rad90;
+    const footAngle = isWall ? (3 * Math.PI / 4) : 0; // Dobla 135° HACIA ARRIBA sellando el hueco de la pata contra la pared
+    leftLeg.footTabPivot.rotation.x = currentFold * footAngle;
+
+    rightLeg.hinge1_2.rotation.y = -currentFold * rad90;
+    rightLeg.hinge2_3.rotation.y = -currentFold * rad90;
+    rightLeg.hinge3_4.rotation.y = -currentFold * rad90;
+    rightLeg.hinge4_flap.rotation.y = -currentFold * rad90;
+    rightLeg.footTabPivot.rotation.x = currentFold * footAngle;
+
+    // ── PIEZA 1: ESPALDAR ──
+    // Aletas laterales doblan 90° hacia la pared
+    backFlangeLeftPivot.rotation.y  = -currentFold * rad90;
+    backFlangeRightPivot.rotation.y =  currentFold * rad90;
+
+    // Pestaña inferior de anclaje: en wall45 dobla hacia ARRIBA (145°) para quedar vertical plana contra el muro detrás del espaldar
+    const backTabAngle = isWall ? (145 * Math.PI / 180) : (-Math.PI / 2);
+    backBottomTabPivot.rotation.x = currentFold * backTabAngle;
+
+    // Altura en modo SUELO / VACÍO (la silla baja al piso cuando está plana)
+    if(!isWall){
+      const currentY = PARAMS.T / 2 + (PARAMS.H_seat - PARAMS.T / 2) * currentFold;
+      piece2Group.position.y = currentY;
+      piece1Group.position.y = currentY;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ORIENTACIÓN BASE: silla derecha (el recostado −45° lo aplica setScene
+     solo en el modo PARED 45°, rotando chairTransformGroup sobre X)
+     ══════════════════════════════════════════════════════════════════ */
+  const yawDeg = 0;
+  function updateChairOrientation(){
+    chairTransformGroup.rotation.order = 'YXZ';
+    chairTransformGroup.rotation.y = yawDeg * (Math.PI / 180);
+  }
+  updateChairOrientation();
+
+  // Cámara Orbital Esférica con 360° completos sin restricciones
+  canvas.addEventListener('pointerdown', e => {
+    isDragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if(!isDragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+
+    if(sceneMode === 'wall45'){
+      // En modo pared, órbita hemisférica amplia de perfil a perfil (-84° a +84°) para no bloquearse detrás del muro
+      camAzimuth = Math.max(-1.46, Math.min(1.46, camAzimuth - dx * 0.004));
+    } else {
+      // En modo suelo o vacío, 360° completamente libre
+      camAzimuth -= dx * 0.004;
+    }
+    // Permite inspección completa arriba/abajo (de -83° a +83°)
+    camElevation = Math.max(-1.45, Math.min(1.45, camElevation + dy * 0.004));
+  });
+  canvas.addEventListener('pointerup', () => { isDragging = false; });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    camDistance = Math.max(600, Math.min(4800, camDistance + e.deltaY * 1.6));
+  }, { passive:false });
+
+  function updateCamera(){
+    camera.position.set(
+      camTarget.x + camDistance * Math.cos(camElevation) * Math.sin(camAzimuth),
+      camTarget.y + camDistance * Math.sin(camElevation),
+      camTarget.z + camDistance * Math.cos(camElevation) * Math.cos(camAzimuth)
+    );
+    camera.lookAt(camTarget);
+  }
+
+  /* Slider de Plegado en Vivo (único control) */
+  const foldSlider = document.getElementById('foldSlider');
+  const foldVal = document.getElementById('foldVal');
+
+  foldSlider.addEventListener('input', e => {
+    const val = parseInt(e.target.value, 10);
+    foldVal.textContent = val + '%';
+    applyFold(val / 100);
+  });
+
+  /* Selector de Piezas: COMPLETA (ambas pliegan juntas) o una sola a la vez */
+  const tabFull = document.getElementById('tabFull');
+  const tabPiece1 = document.getElementById('tabPiece1');
+  const tabPiece2 = document.getElementById('tabPiece2');
+
+  function setPieceView(mode){
+    tabFull.classList.toggle('on', mode === 'full');
+    tabPiece1.classList.toggle('on', mode === 'p1');
+    tabPiece2.classList.toggle('on', mode === 'p2');
+    if(mode === 'full'){
+      piece1Group.visible = true;
+      piece2Group.visible = true;
+    } else if(mode === 'p1'){
+      // SOLO ARRIBA (Espaldar)
+      piece1Group.visible = true;
+      piece2Group.visible = false;
+    } else {
+      // SOLO ABAJO (Asiento y Patas)
+      piece1Group.visible = false;
+      piece2Group.visible = true;
+    }
+  }
+
+  tabFull.addEventListener('click', () => setPieceView('full'));
+  tabPiece1.addEventListener('click', () => setPieceView('p1'));
+  tabPiece2.addEventListener('click', () => setPieceView('p2'));
+
+  /* ══════════════════════════════════════════════════════════════════
+     GENERADOR VECTORIAL EXACTO DE TROQUELES SVG (1:1 CAD REAL)
+     ══════════════════════════════════════════════════════════════════ */
+  const CUT_COL = '#14110C', FOLD_COL = '#C24B33', DIM_COL = '#5E4A32';
+
+  function svgWrap(w, h, title, content){
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + 'mm" height="' + h + 'mm" viewBox="0 0 ' + w + ' ' + h + '" style="background:#FFFDF7; width:100%; height:auto;" data-title="' + title + '">' +
+      '<title>' + title + '</title>' +
+      content +
+      '</svg>';
+  }
+
+  function svgRuler(x1, y1, x2, y2, label){
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const isVert = Math.abs(x1 - x2) < 2;
+    let t = '';
+    if(isVert){
+      t = '<text x="' + (mx - 8) + '" y="' + my + '" font-size="16" fill="' + DIM_COL + '" text-anchor="middle" font-family="VT323,monospace" transform="rotate(-90 ' + (mx - 8) + ' ' + my + ')">' + label + '</text>';
+    } else {
+      t = '<text x="' + mx + '" y="' + (my - 8) + '" font-size="18" fill="' + DIM_COL + '" text-anchor="middle" font-family="VT323,monospace">' + label + '</text>';
+    }
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + DIM_COL + '" stroke-width="2"/>' +
+      '<line x1="' + x1 + '" y1="' + (y1 - 6) + '" x2="' + x1 + '" y2="' + (y1 + 6) + '" stroke="' + DIM_COL + '" stroke-width="2"/>' +
+      '<line x1="' + x2 + '" y1="' + (y2 - 6) + '" x2="' + x2 + '" y2="' + (y2 + 6) + '" stroke="' + DIM_COL + '" stroke-width="2"/>' +
+      t;
+  }
+
+  // Troquel 1: Parte de Arriba (Espaldar Ladder-Back Noclip recortado tras la 4ª barra)
+  function generateTroquelArribaSVG(){
+    const W = 720, H = 720, ox = 130, oy = 135;
+    let c = '';
+
+    // Borde perimetral de lámina bruta (720 × 720 mm)
+    c += '<rect x="6" y="6" width="708" height="708" fill="#FAF8F2" stroke="#4A3A28" stroke-width="1.5" stroke-dasharray="6 4"/>';
+
+    // Rótulo superior del plano
+    c += '<text x="35" y="40" font-family="Oswald,sans-serif" font-size="23" font-weight="700" fill="' + CUT_COL + '" letter-spacing="0.05em">PLANO CAD 1:1 · TROQUEL 1 — ESPALDAR NOCLIP</text>';
+    c += '<text x="35" y="62" font-family="Archivo,sans-serif" font-size="12.5" fill="' + DIM_COL + '">Lámina de cartón corrugado 5 mm (720 × 720 mm) · Recorte 105 mm mural · 3 Calados · Pestaña inferior 45 mm</text>';
+
+    // Remate curvo superior
+    c += '<path d="M ' + ox + ' ' + (oy + 75) + ' Q ' + (ox + 220) + ' ' + oy + ' ' + (ox + 440) + ' ' + (oy + 75) + ' Z" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    // Marco del espaldar recortado tras la 4ª barra (440 × 300 mm)
+    c += '<rect x="' + ox + '" y="' + (oy + 75) + '" width="440" height="300" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    // 3 Calados horizontales (travesaños ladder-back, rendija inferior retirada)
+    const slatSlots = [105, 177, 249];
+    for(let i = 0; i < 3; i++){
+      const slotY = oy + slatSlots[i];
+      c += '<rect x="' + (ox + 50) + '" y="' + slotY + '" width="340" height="36" rx="4" fill="#FFFFFF" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+      c += '<text x="' + (ox + 220) + '" y="' + (slotY + 24) + '" font-family="VT323,monospace" font-size="18" fill="' + DIM_COL + '" text-anchor="middle">CALADO ' + (i+1) + ' (340 × 36 mm) · [RETIRAR CARTÓN]</text>';
+    }
+
+    // Línea de corte horizontal justo debajo del marco útil
+    const cutLineY = oy + 375;
+    c += '<line x1="' + ox + '" y1="' + cutLineY + '" x2="' + (ox + 440) + '" y2="' + cutLineY + '" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    // Aleta lateral izquierda (30 × 300 mm) con corte en inglete al muro en su base (43 mm exactos a 35°)
+    c += '<polygon points="' + (ox - 30) + ',' + (oy + 75) + ' ' + ox + ',' + (oy + 75) + ' ' + ox + ',' + cutLineY + ' ' + (ox - 30) + ',' + (cutLineY - 43) + '" fill="#C9BE9B" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="' + ox + '" y1="' + (oy + 75) + '" x2="' + ox + '" y2="' + cutLineY + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+    c += '<text x="' + (ox - 15) + '" y="' + (oy + 225) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(-90 ' + (ox - 15) + ' ' + (oy + 225) + ')">ALETA IZQ · INGLETE 43 mm (DOBLAR 90° ATRÁS)</text>';
+
+    // Aleta lateral derecha (30 × 300 mm) con corte en inglete al muro en su base (43 mm exactos a 35°)
+    c += '<polygon points="' + (ox + 440) + ',' + (oy + 75) + ' ' + (ox + 470) + ',' + (oy + 75) + ' ' + (ox + 470) + ',' + (cutLineY - 43) + ' ' + (ox + 440) + ',' + cutLineY + '" fill="#C9BE9B" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="' + (ox + 440) + '" y1="' + (oy + 75) + '" x2="' + (ox + 440) + '" y2="' + cutLineY + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+    c += '<text x="' + (ox + 455) + '" y="' + (oy + 225) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(90 ' + (ox + 455) + ' ' + (oy + 225) + ')">ALETA DER · INGLETE 43 mm (DOBLAR 90° ATRÁS)</text>';
+
+    // Pestaña inferior de anclaje a pared (440 × 45 mm recta continua sin hendidos)
+    c += '<rect x="' + ox + '" y="' + cutLineY + '" width="440" height="45" fill="#E8DEC4" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="' + ox + '" y1="' + cutLineY + '" x2="' + (ox + 440) + '" y2="' + cutLineY + '" stroke="' + FOLD_COL + '" stroke-width="3.5" stroke-dasharray="8 6"/>';
+    c += '<text x="' + (ox + 220) + '" y="' + (cutLineY + 28) + '" font-family="VT323,monospace" font-size="19" fill="' + DIM_COL + '" text-anchor="middle">PESTAÑA INFERIOR RECTA (440 × 45 mm) · DOBLAR 145° HACIA ARRIBA [ANCLAJE MURAL CIEGO]</text>';
+
+    // Cotas Pieza 1
+    c += svgRuler(ox, oy - 20, ox + 440, oy - 20, '440 mm (Ancho cuerpo)');
+    c += svgRuler(ox - 30, oy - 45, ox + 470, oy - 45, '500 mm (Ancho total con aletas)');
+    c += svgRuler(ox + 490, oy + 75, ox + 490, cutLineY, '300 mm (Marco útil)');
+    c += svgRuler(ox + 540, oy, ox + 540, cutLineY, '375 mm (Alto total)');
+    c += svgRuler(ox + 490, cutLineY, ox + 490, cutLineY + 45, '45 mm');
+
+    // Cuadro de Control y Calibración 100 × 100 mm
+    c += '<g transform="translate(35, ' + (H - 120) + ')">';
+    c += '<rect x="0" y="0" width="100" height="100" fill="#FFFDF7" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="0" y1="50" x2="100" y2="50" stroke="' + DIM_COL + '" stroke-width="1" stroke-dasharray="4 3"/>';
+    c += '<line x1="50" y1="0" x2="50" y2="100" stroke="' + DIM_COL + '" stroke-width="1" stroke-dasharray="4 3"/>';
+    c += '<text x="50" y="42" font-family="VT323,monospace" font-size="17" fill="' + CUT_COL + '" text-anchor="middle">CONTROL CAD</text>';
+    c += '<text x="50" y="64" font-family="VT323,monospace" font-size="19" font-weight="bold" fill="' + FOLD_COL + '" text-anchor="middle">100 × 100 mm</text>';
+    c += '<text x="50" y="84" font-family="VT323,monospace" font-size="12.5" fill="' + DIM_COL + '" text-anchor="middle">[CALIBRAR PLOTTER]</text>';
+    c += '</g>';
+
+    // Leyenda técnica
+    c += '<g transform="translate(150, ' + (H - 110) + ')">';
+    c += '<line x1="0" y1="12" x2="35" y2="12" stroke="' + CUT_COL + '" stroke-width="3"/>';
+    c += '<text x="45" y="16" font-family="VT323,monospace" font-size="16" fill="' + CUT_COL + '">LÍNEA NEGRA CONTINUA: CORTE CON CUTTER O LÁSER</text>';
+    c += '<line x1="0" y1="36" x2="35" y2="36" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 5"/>';
+    c += '<text x="45" y="40" font-family="VT323,monospace" font-size="16" fill="' + FOLD_COL + '">LÍNEA ROJA TRAZADA: HENDIDO / PLIEGUE A 90° (SIMPLE ONDA 5 mm)</text>';
+    c += '<text x="0" y="68" font-family="VT323,monospace" font-size="14.5" fill="' + DIM_COL + '">PIEZA 1: ESPALDAR · FIJACIÓN DIRECTA A PARED MEDIANTE PESTAÑA Y ALETAS</text>';
+    c += '</g>';
+
+    // Cajetín Técnico Arquitectónico Oficial
+    c += '<g transform="translate(' + (W - 355) + ', ' + (H - 110) + ')">';
+    c += '<rect x="0" y="0" width="320" height="85" fill="#FFFDF7" stroke="' + CUT_COL + '" stroke-width="2"/>';
+    c += '<line x1="0" y1="28" x2="320" y2="28" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<line x1="0" y1="56" x2="320" y2="56" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<line x1="175" y1="56" x2="175" y2="85" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<text x="12" y="19" font-family="Oswald,sans-serif" font-size="13" font-weight="700" fill="' + CUT_COL + '" letter-spacing="0.05em">UNIVERSIDAD CESMAG · FACULTAD DE DISEÑO</text>';
+    c += '<text x="12" y="46" font-family="Archivo,sans-serif" font-size="11" font-weight="600" fill="' + DIM_COL + '">POP BACKROOMS: SIN SALIDA (A24) · SILLA 45°</text>';
+    c += '<text x="12" y="74" font-family="VT323,monospace" font-size="16" fill="' + CUT_COL + '">PIEZA 1: ESPALDAR 720×720 mm</text>';
+    c += '<text x="187" y="74" font-family="VT323,monospace" font-size="16" fill="' + FOLD_COL + '">ESCALA 1:1 CAD</text>';
+    c += '</g>';
+
+    return svgWrap(W, H, 'Troquel 1 — Parte de Arriba (Espaldar Noclip 105 mm)', c);
+  }
+
+  // Troquel 2: Parte de Abajo (Asiento Noclip 250 mm + Faldones con corte a 45° + Patas 200 mm en inglete)
+  function generateTroquelAbajoSVG(){
+    const W = 860, H = 960, ox = 210, oy = 110;
+    let c = '';
+
+    // Borde perimetral de lámina bruta (860 × 960 mm)
+    c += '<rect x="6" y="6" width="848" height="948" fill="#FAF8F2" stroke="#4A3A28" stroke-width="1.5" stroke-dasharray="6 4"/>';
+
+    // Rótulo superior del plano
+    c += '<text x="35" y="42" font-family="Oswald,sans-serif" font-size="24" font-weight="700" fill="' + CUT_COL + '" letter-spacing="0.05em">PLANO CAD 1:1 · TROQUEL 2 — ASIENTO Y PATAS NOCLIP</text>';
+    c += '<text x="35" y="66" font-family="Archivo,sans-serif" font-size="13" fill="' + DIM_COL + '">Lámina de cartón corrugado 5 mm (860 × 960 mm) · Asiento 250 mm · Faldones a 45° · Patas 200 mm en inglete al muro</text>';
+
+    // 1. Solapa superior a pared (440 × 71 mm, cubre la diagonal completa del faldón lateral hasta abajo)
+    c += '<rect x="' + ox + '" y="' + oy + '" width="440" height="71" fill="#E8DEC4" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<text x="' + (ox + 220) + '" y="' + (oy + 42) + '" font-family="VT323,monospace" font-size="19" fill="' + DIM_COL + '" text-anchor="middle">SOLAPA A PARED (71 mm · CUBRE LA DIAGONAL DEL FALDON HASTA ABAJO)</text>';
+    c += '<line x1="' + ox + '" y1="' + (oy + 71) + '" x2="' + (ox + 440) + '" y2="' + (oy + 71) + '" stroke="' + FOLD_COL + '" stroke-width="3.5" stroke-dasharray="8 6"/>';
+
+    // 2. Asiento limpio compacto recortado a pared (440 × 250 mm)
+    const seatY = oy + 71;
+    c += '<rect x="' + ox + '" y="' + seatY + '" width="440" height="250" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    // 3. Faldones laterales con corte diagonal a 45° en la arista del muro
+    // Faldón izquierdo (50 × 250 mm)
+    c += '<polygon points="' + ox + ',' + seatY + ' ' + (ox - 50) + ',' + (seatY + 50) + ' ' + (ox - 50) + ',' + (seatY + 250) + ' ' + ox + ',' + (seatY + 250) + '" fill="#C9BE9B" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="' + ox + '" y1="' + seatY + '" x2="' + ox + '" y2="' + (seatY + 250) + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+    c += '<text x="' + (ox - 25) + '" y="' + (seatY + 150) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(-90 ' + (ox - 25) + ' ' + (seatY + 150) + ')">FALDÓN IZQ · CORTE 45° AL MURO</text>';
+
+    // Faldón derecho (50 × 250 mm)
+    c += '<polygon points="' + (ox + 440) + ',' + seatY + ' ' + (ox + 490) + ',' + (seatY + 50) + ' ' + (ox + 490) + ',' + (seatY + 250) + ' ' + (ox + 440) + ',' + (seatY + 250) + '" fill="#C9BE9B" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="' + (ox + 440) + '" y1="' + seatY + '" x2="' + (ox + 440) + '" y2="' + (seatY + 250) + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+    c += '<text x="' + (ox + 465) + '" y="' + (seatY + 150) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(90 ' + (ox + 465) + ' ' + (seatY + 150) + ')">FALDÓN DER · CORTE 45° AL MURO</text>';
+
+    // Texto central del Asiento
+    c += '<text x="' + (ox + 220) + '" y="' + (seatY + 115) + '" font-family="VT323,monospace" font-size="22" fill="' + DIM_COL + '" text-anchor="middle">ASIENTO NOCLIP COMPACTO (440 × 250 mm)</text>';
+    c += '<text x="' + (ox + 220) + '" y="' + (seatY + 145) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">[ÁREA ÚTIL LIBRE PARA GRÁFICA / TEXTURA]</text>';
+
+    // 4. Faldón frontal (440 × 50 mm)
+    const frontY = seatY + 250;
+    c += '<line x1="' + ox + '" y1="' + frontY + '" x2="' + (ox + 440) + '" y2="' + frontY + '" stroke="' + FOLD_COL + '" stroke-width="3.5" stroke-dasharray="8 6"/>';
+    c += '<rect x="' + ox + '" y="' + frontY + '" width="440" height="50" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+    c += '<text x="' + (ox + 220) + '" y="' + (frontY + 32) + '" font-family="VT323,monospace" font-size="19" fill="' + DIM_COL + '" text-anchor="middle">FALDÓN FRONTAL (DOBLAR 90° ABAJO)</text>';
+
+    // 5. Patas delanteras (longitud 200 mm con corte en inglete a 45° en la base)
+    const legTopY = frontY + 50;
+    c += '<line x1="' + ox + '" y1="' + legTopY + '" x2="' + (ox + 159) + '" y2="' + legTopY + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+    c += '<line x1="' + (ox + 440 - 159) + '" y1="' + legTopY + '" x2="' + (ox + 440) + '" y2="' + legTopY + '" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 6"/>';
+
+    // Pata Izquierda (longitud 200 mm con corte en inglete a 45° en la base)
+    const legH = 200;
+    const legH3 = 164; // 200 - 36 mm (corte en inglete al muro)
+    
+    // Contorno poligonal de la Pata Izquierda con cortes diagonales
+    const ptsIzq = [
+      ox + ',' + legTopY,
+      (ox + 159) + ',' + legTopY,
+      (ox + 159) + ',' + (legTopY + 175),
+      (ox + 144) + ',' + (legTopY + 190),
+      (ox + 144) + ',' + (legTopY + legH),
+      (ox + 108) + ',' + (legTopY + legH3),
+      (ox + 72) + ',' + (legTopY + legH3),
+      (ox + 36) + ',' + (legTopY + legH),
+      ox + ',' + (legTopY + legH)
+    ].join(' ');
+    c += '<polygon points="' + ptsIzq + '" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    // Líneas de pliegue interiores de las caras
+    c += '<line x1="' + (ox + 36) + '" y1="' + legTopY + '" x2="' + (ox + 36) + '" y2="' + (legTopY + legH) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 72) + '" y1="' + legTopY + '" x2="' + (ox + 72) + '" y2="' + (legTopY + legH3) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 108) + '" y1="' + legTopY + '" x2="' + (ox + 108) + '" y2="' + (legTopY + legH3) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 144) + '" y1="' + legTopY + '" x2="' + (ox + 144) + '" y2="' + (legTopY + 190) + '" stroke="' + FOLD_COL + '" stroke-width="2" stroke-dasharray="4 4"/>';
+
+    c += '<text x="' + (ox + 18) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C1</text>';
+    c += '<text x="' + (ox + 54) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C2</text>';
+    c += '<text x="' + (ox + 90) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C3</text>';
+    c += '<text x="' + (ox + 126) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C4</text>';
+
+    // Pestaña/Tapa de pie a pared en Cara 1 (36 × 51 mm, sella el hueco completo de la pata)
+    c += '<polygon points="' + ox + ',' + (legTopY + legH) + ' ' + (ox + 36) + ',' + (legTopY + legH) + ' ' + (ox + 36) + ',' + (legTopY + legH + 51) + ' ' + ox + ',' + (legTopY + legH + 51) + '" fill="#E8DEC4" stroke="' + CUT_COL + '" stroke-width="2"/>';
+    c += '<line x1="' + ox + '" y1="' + (legTopY + legH) + '" x2="' + (ox + 36) + '" y2="' + (legTopY + legH) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="5 3"/>';
+    c += '<text x="' + (ox + 18) + '" y="' + (legTopY + legH + 32) + '" font-family="VT323,monospace" font-size="14" fill="' + DIM_COL + '" text-anchor="middle">TAPA 51mm</text>';
+    c += '<text x="' + (ox + 54) + '" y="' + (legTopY + 100) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(-90 ' + (ox + 54) + ' ' + (legTopY + 100) + ')">PATA IZQ · INGLETE 45° AL MURO</text>';
+
+    // Pata Derecha (espejo simétrico de Pata Izquierda: C1 en la esquina exterior)
+    const ptsDer = [
+      (ox + 281) + ',' + legTopY,
+      (ox + 440) + ',' + legTopY,
+      (ox + 440) + ',' + (legTopY + legH),
+      (ox + 404) + ',' + (legTopY + legH),
+      (ox + 368) + ',' + (legTopY + legH3),
+      (ox + 332) + ',' + (legTopY + legH3),
+      (ox + 296) + ',' + (legTopY + legH),
+      (ox + 296) + ',' + (legTopY + 190),
+      (ox + 281) + ',' + (legTopY + 175)
+    ].join(' ');
+    c += '<polygon points="' + ptsDer + '" fill="#D8CFAF" stroke="' + CUT_COL + '" stroke-width="3"/>';
+
+    c += '<line x1="' + (ox + 404) + '" y1="' + legTopY + '" x2="' + (ox + 404) + '" y2="' + (legTopY + legH) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 368) + '" y1="' + legTopY + '" x2="' + (ox + 368) + '" y2="' + (legTopY + legH3) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 332) + '" y1="' + legTopY + '" x2="' + (ox + 332) + '" y2="' + (legTopY + legH3) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="6 4"/>';
+    c += '<line x1="' + (ox + 296) + '" y1="' + legTopY + '" x2="' + (ox + 296) + '" y2="' + (legTopY + 190) + '" stroke="' + FOLD_COL + '" stroke-width="2" stroke-dasharray="4 4"/>';
+
+    c += '<text x="' + (ox + 422) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C1</text>';
+    c += '<text x="' + (ox + 386) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C2</text>';
+    c += '<text x="' + (ox + 350) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C3</text>';
+    c += '<text x="' + (ox + 314) + '" y="' + (legTopY + 30) + '" font-family="VT323,monospace" font-size="16" fill="' + DIM_COL + '" text-anchor="middle">C4</text>';
+
+    // Pestaña/Tapa de pie a pared en Cara 1 (36 × 51 mm, sella el hueco completo de la pata)
+    c += '<polygon points="' + (ox + 404) + ',' + (legTopY + legH) + ' ' + (ox + 440) + ',' + (legTopY + legH) + ' ' + (ox + 440) + ',' + (legTopY + legH + 51) + ' ' + (ox + 404) + ',' + (legTopY + legH + 51) + '" fill="#E8DEC4" stroke="' + CUT_COL + '" stroke-width="2"/>';
+    c += '<line x1="' + (ox + 404) + '" y1="' + (legTopY + legH) + '" x2="' + (ox + 440) + '" y2="' + (legTopY + legH) + '" stroke="' + FOLD_COL + '" stroke-width="2.5" stroke-dasharray="5 3"/>';
+    c += '<text x="' + (ox + 422) + '" y="' + (legTopY + legH + 32) + '" font-family="VT323,monospace" font-size="14" fill="' + DIM_COL + '" text-anchor="middle">TAPA 51mm</text>';
+    c += '<text x="' + (ox + 386) + '" y="' + (legTopY + 100) + '" font-family="VT323,monospace" font-size="15" fill="' + DIM_COL + '" text-anchor="middle" transform="rotate(90 ' + (ox + 386) + ' ' + (legTopY + 100) + ')">PATA DER · INGLETE 45° AL MURO</text>';
+
+    // Calado hueco central entre patas (122 × 200 mm)
+    c += '<rect x="' + (ox + 159) + '" y="' + legTopY + '" width="' + (440 - 159 * 2) + '" height="' + legH + '" fill="#FFFFFF" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<text x="' + (ox + 220) + '" y="' + (legTopY + 95) + '" font-family="VT323,monospace" font-size="22" fill="' + DIM_COL + '" text-anchor="middle">CALADO CENTRAL</text>';
+    c += '<text x="' + (ox + 220) + '" y="' + (legTopY + 120) + '" font-family="VT323,monospace" font-size="17" fill="' + DIM_COL + '" text-anchor="middle">[RETIRAR CARTÓN]</text>';
+
+    // Cotas Pieza 2
+    c += svgRuler(ox, oy - 22, ox + 440, oy - 22, '440 mm (Ancho)');
+    c += svgRuler(ox - 85, oy, ox - 85, oy + 71, '71 mm (Solapa)');
+    c += svgRuler(ox - 85, seatY, ox - 85, seatY + 250, '250 mm (Asiento Noclip)');
+    c += svgRuler(ox - 85, frontY, ox - 85, frontY + 50, '50 mm (Faldón)');
+    c += svgRuler(ox - 85, legTopY, ox - 85, legTopY + 200, '200 mm (Patas)');
+
+    // Cuadro de Control y Calibración 100 × 100 mm
+    c += '<g transform="translate(35, ' + (H - 120) + ')">';
+    c += '<rect x="0" y="0" width="100" height="100" fill="#FFFDF7" stroke="' + CUT_COL + '" stroke-width="2.5"/>';
+    c += '<line x1="0" y1="50" x2="100" y2="50" stroke="' + DIM_COL + '" stroke-width="1" stroke-dasharray="4 3"/>';
+    c += '<line x1="50" y1="0" x2="50" y2="100" stroke="' + DIM_COL + '" stroke-width="1" stroke-dasharray="4 3"/>';
+    c += '<text x="50" y="42" font-family="VT323,monospace" font-size="17" fill="' + CUT_COL + '" text-anchor="middle">CONTROL CAD</text>';
+    c += '<text x="50" y="64" font-family="VT323,monospace" font-size="19" font-weight="bold" fill="' + FOLD_COL + '" text-anchor="middle">100 × 100 mm</text>';
+    c += '<text x="50" y="84" font-family="VT323,monospace" font-size="12.5" fill="' + DIM_COL + '" text-anchor="middle">[CALIBRAR PLOTTER]</text>';
+    c += '</g>';
+
+    // Leyenda técnica
+    c += '<g transform="translate(155, ' + (H - 110) + ')">';
+    c += '<line x1="0" y1="12" x2="35" y2="12" stroke="' + CUT_COL + '" stroke-width="3"/>';
+    c += '<text x="45" y="16" font-family="VT323,monospace" font-size="16" fill="' + CUT_COL + '">LÍNEA NEGRA CONTINUA: CORTE CON CUTTER O LÁSER</text>';
+    c += '<line x1="0" y1="36" x2="35" y2="36" stroke="' + FOLD_COL + '" stroke-width="3" stroke-dasharray="8 5"/>';
+    c += '<text x="45" y="40" font-family="VT323,monospace" font-size="16" fill="' + FOLD_COL + '">LÍNEA ROJA TRAZADA: HENDIDO / PLIEGUE A 90° (SIMPLE ONDA 5 mm)</text>';
+    c += '<text x="0" y="68" font-family="VT323,monospace" font-size="14.5" fill="' + DIM_COL + '">PIEZA 2: ASIENTO Y PATAS · SOLAPA SUPERIOR 71 mm · INGLETE 45° AL MURO</text>';
+    c += '</g>';
+
+    // Cajetín Técnico Arquitectónico Oficial
+    c += '<g transform="translate(' + (W - 355) + ', ' + (H - 110) + ')">';
+    c += '<rect x="0" y="0" width="320" height="85" fill="#FFFDF7" stroke="' + CUT_COL + '" stroke-width="2"/>';
+    c += '<line x1="0" y1="28" x2="320" y2="28" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<line x1="0" y1="56" x2="320" y2="56" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<line x1="175" y1="56" x2="175" y2="85" stroke="' + CUT_COL + '" stroke-width="1.5"/>';
+    c += '<text x="12" y="19" font-family="Oswald,sans-serif" font-size="13" font-weight="700" fill="' + CUT_COL + '" letter-spacing="0.05em">UNIVERSIDAD CESMAG · FACULTAD DE DISEÑO</text>';
+    c += '<text x="12" y="46" font-family="Archivo,sans-serif" font-size="11" font-weight="600" fill="' + DIM_COL + '">POP BACKROOMS: SIN SALIDA (A24) · SILLA 45°</text>';
+    c += '<text x="12" y="74" font-family="VT323,monospace" font-size="16" fill="' + CUT_COL + '">PIEZA 2: ASIENTO/PATAS 860×960 mm</text>';
+    c += '<text x="187" y="74" font-family="VT323,monospace" font-size="16" fill="' + FOLD_COL + '">ESCALA 1:1 CAD</text>';
+    c += '</g>';
+
+    return svgWrap(W, H, 'Troquel 2 — Parte de Abajo (Asiento y Patas Noclip 250 mm)', c);
+  }
+
+  /* Modal de Visualización y Descarga de Troqueles CAD 1:1 */
+  const modal = document.getElementById('troquelModal');
+  const modalCanvas = document.getElementById('modalCanvas');
+  const modalTitle = document.getElementById('modalTitle');
+  const mTabArriba = document.getElementById('mTabArriba');
+  const mTabAbajo = document.getElementById('mTabAbajo');
+  let currentSvgContent = '';
+  let currentFileName = 'Troquel_CAD.svg';
+  let currentModalPiece = 'arriba';
+
+  function openTroquel(which){
+    currentModalPiece = which;
+    if(which === 'arriba'){
+      currentSvgContent = generateTroquelArribaSVG();
+      modalTitle.textContent = 'PLANO CAD 1:1 · PIEZA 1 (ESPALDAR 720×720 mm)';
+      currentFileName = 'Troquel_1_Espaldar_Noclip_CAD_1a1.svg';
+      if(mTabArriba) mTabArriba.classList.add('on');
+      if(mTabAbajo) mTabAbajo.classList.remove('on');
+    } else {
+      currentSvgContent = generateTroquelAbajoSVG();
+      modalTitle.textContent = 'PLANO CAD 1:1 · PIEZA 2 (ASIENTO Y PATAS 860×960 mm)';
+      currentFileName = 'Troquel_2_Asiento_Patas_Noclip_CAD_1a1.svg';
+      if(mTabArriba) mTabArriba.classList.remove('on');
+      if(mTabAbajo) mTabAbajo.classList.add('on');
+    }
+    modalCanvas.innerHTML = currentSvgContent;
+    modal.classList.add('on');
+  }
+
+  const btnHeaderPlantillas = document.getElementById('btnHeaderPlantillas');
+  if(btnHeaderPlantillas) btnHeaderPlantillas.addEventListener('click', () => openTroquel(currentModalPiece));
+  const btnOpenModalMaster = document.getElementById('btnOpenModalMaster');
+  if(btnOpenModalMaster) btnOpenModalMaster.addEventListener('click', () => openTroquel(currentModalPiece));
+  const btnOpenArriba = document.getElementById('btnOpenArriba');
+  if(btnOpenArriba) btnOpenArriba.addEventListener('click', () => openTroquel('arriba'));
+  const btnOpenAbajo = document.getElementById('btnOpenAbajo');
+  if(btnOpenAbajo) btnOpenAbajo.addEventListener('click', () => openTroquel('abajo'));
+
+  if(mTabArriba) mTabArriba.addEventListener('click', () => openTroquel('arriba'));
+  if(mTabAbajo) mTabAbajo.addEventListener('click', () => openTroquel('abajo'));
+
+  const btnCloseModal = document.getElementById('btnCloseModal');
+  if(btnCloseModal) btnCloseModal.addEventListener('click', () => modal.classList.remove('on'));
+  // (Manejador unificado de teclas Escape y F/P implementado más abajo)
+
+  document.getElementById('btnDownloadSvg').addEventListener('click', () => {
+    const blob = new Blob([currentSvgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  /* ══════════════════════════════════════════════════════════════════
+     CARGA Y GESTIÓN DE TEXTURAS GRÁFICAS (2 PLANTILLAS SEPARADAS)
+     ══════════════════════════════════════════════════════════════════ */
+  const inputTex1 = document.getElementById('inputTex1');
+  const btnUploadTex1 = document.getElementById('btnUploadTex1');
+  const statusTex1 = document.getElementById('statusTex1');
+
+  const inputTex2 = document.getElementById('inputTex2');
+  const btnUploadTex2 = document.getElementById('btnUploadTex2');
+  const statusTex2 = document.getElementById('statusTex2');
+
+  const btnResetAllTex = document.getElementById('btnResetAllTex');
+  const texLoader = new THREE.TextureLoader();
+
+  let texPiece1 = null;
+  let texPiece2 = null;
+
+  function updateResetButtonVisibility(){
+    if(btnResetAllTex){
+      btnResetAllTex.style.display = (texPiece1 || texPiece2) ? 'flex' : 'none';
+    }
+  }
+
+  function applyTexture1(dataUri){
+    texLoader.load(dataUri, (tex) => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      texPiece1 = tex;
+      matPiece1.map = tex;
+      matPiece1.color.setHex(0xFFFFFF); // Blanco puro para fidelidad 1:1 de color
+      matPiece1.needsUpdate = true;
+      if(statusTex1){
+        statusTex1.textContent = 'CARGADA ✅';
+        statusTex1.style.color = '#9FE870';
+      }
+      updateResetButtonVisibility();
+    });
+  }
+
+  function applyTexture2(dataUri){
+    texLoader.load(dataUri, (tex) => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      texPiece2 = tex;
+      matPiece2.map = tex;
+      matPiece2.color.setHex(0xFFFFFF); // Blanco puro para fidelidad 1:1 de color
+      matPiece2.needsUpdate = true;
+      if(statusTex2){
+        statusTex2.textContent = 'CARGADA ✅';
+        statusTex2.style.color = '#9FE870';
+      }
+      updateResetButtonVisibility();
+    });
+  }
+
+  function resetAllTextures(){
+    texPiece1 = null;
+    texPiece2 = null;
+    matPiece1.map = null;
+    matPiece1.color.setHex(0xC7A062);
+    matPiece1.needsUpdate = true;
+    matPiece2.map = null;
+    matPiece2.color.setHex(0xC7A062);
+    matPiece2.needsUpdate = true;
+    if(statusTex1){ statusTex1.textContent = 'KRAFT'; statusTex1.style.color = '#5E4A32'; }
+    if(statusTex2){ statusTex2.textContent = 'KRAFT'; statusTex2.style.color = '#5E4A32'; }
+    if(inputTex1) inputTex1.value = '';
+    if(inputTex2) inputTex2.value = '';
+    updateResetButtonVisibility();
+  }
+
+  if(btnUploadTex1 && inputTex1){
+    btnUploadTex1.addEventListener('click', () => inputTex1.click());
+    inputTex1.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = (evt) => applyTexture1(evt.target.result);
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if(btnUploadTex2 && inputTex2){
+    btnUploadTex2.addEventListener('click', () => inputTex2.click());
+    inputTex2.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = (evt) => applyTexture2(evt.target.result);
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if(btnResetAllTex){
+    btnResetAllTex.addEventListener('click', resetAllTextures);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     MODO PRESENTACIÓN VHS PANTALLA COMPLETA & FOUND FOOTAGE OSD
+     ══════════════════════════════════════════════════════════════════ */
+  let presStartTime = Date.now();
+  const vhsTimecodeEl = document.getElementById('vhsTimecode');
+
+  function updateVhsTimecode(){
+    if(!vhsTimecodeEl) return;
+    const elapsed = Date.now() - presStartTime;
+    const totalFrames = Math.floor(elapsed / (1000 / 30));
+    const frames = totalFrames % 30;
+    const totalSeconds = Math.floor(elapsed / 1000);
+    const seconds = (totalSeconds % 60);
+    const minutes = (Math.floor(totalSeconds / 60) + 14) % 60;
+    const hours = 0;
+    vhsTimecodeEl.textContent = 
+      String(hours).padStart(2, '0') + ':' +
+      String(minutes).padStart(2, '0') + ':' +
+      String(seconds).padStart(2, '0') + ':' +
+      String(frames).padStart(2, '0');
+  }
+
+  function enterPresentation(){
+    isPresentationMode = true;
+    document.body.classList.add('presentation-mode');
+    presStartTime = Date.now();
+    renderer.setPixelRatio(0.85); // Reducción estética videocámara analógica VHS + fluidez óptima
+    if(document.documentElement.requestFullscreen && !document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    setTimeout(resize, 60);
+    setTimeout(resize, 220);
+  }
+
+  function exitPresentation(){
+    isPresentationMode = false;
+    document.body.classList.remove('presentation-mode');
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Restaurar nitidez nativa
+    if(document.exitFullscreen && document.fullscreenElement){
+      document.exitFullscreen().catch(() => {});
+    }
+    setTimeout(resize, 60);
+    setTimeout(resize, 220);
+  }
+
+  function togglePresentation(){
+    if(isPresentationMode) exitPresentation();
+    else enterPresentation();
+  }
+
+  const btnEnterPres = document.getElementById('btnEnterPres');
+  const btnHeaderPres = document.getElementById('btnHeaderPres');
+  const btnExitPres = document.getElementById('btnExitPres');
+
+  if(btnEnterPres) btnEnterPres.addEventListener('click', enterPresentation);
+  if(btnHeaderPres) btnHeaderPres.addEventListener('click', togglePresentation);
+  if(btnExitPres) btnExitPres.addEventListener('click', exitPresentation);
+
+  document.addEventListener('fullscreenchange', () => {
+    if(!document.fullscreenElement && isPresentationMode){
+      exitPresentation();
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      if(modal && modal.classList.contains('on')){
+        modal.classList.remove('on');
+      } else if(isPresentationMode){
+        exitPresentation();
+      }
+    } else if((e.key === 'f' || e.key === 'F' || e.key === 'p' || e.key === 'P') && (!modal || !modal.classList.contains('on'))){
+      if(document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+      togglePresentation();
+    }
+  });
+
+  /* Inicialización */
+  resize();
+  applyFold(1.0);          // abre armada
+  setPieceView('full');    // silla completa (ambas piezas pliegan juntas)
+
+  function renderLoop(){
+    updateCamera();
+    if(isPresentationMode){
+      updateVhsTimecode();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(renderLoop);
+  }
+  requestAnimationFrame(renderLoop);
+})();
+</script>
+</body>
+</html>
